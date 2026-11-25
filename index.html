@@ -46,12 +46,12 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .app{min-height:100vh;display:flex;flex-direction:column;gap:var(--db-s-4);margin:0 auto;padding:var(--db-s-5) clamp(16px,4vw,48px) calc(var(--db-s-5) + env(safe-area-inset-bottom))}
 .row{display:flex;align-items:center;gap:var(--db-s-5);padding:var(--db-s-4) 0;border-top:1px solid var(--db-line)}
 
-/* Botones: un solo radio para todos; el play es la única excepción circular */
+/* Botones: un solo radio para todos, play incluido */
 .btn{height:var(--db-ctl);min-width:var(--db-ctl);padding:0 var(--db-s-4);border-radius:var(--db-radius-ctl);border:1px solid var(--db-line);background:var(--db-surface);color:var(--db-text-2);font-size:var(--db-fs-3);display:inline-grid;place-items:center}
 .btn:hover{color:var(--db-text);border-color:var(--db-text-3)}
 .btn--icon{padding:0;width:var(--db-ctl)}
 .btn--on{border-color:var(--db-accent);color:var(--db-accent)}
-.play{width:var(--db-play);height:var(--db-play);border-radius:50%;background:var(--db-text);color:var(--db-bg);display:grid;place-items:center;flex:none}
+.play{width:var(--db-play);height:var(--db-play);border-radius:var(--db-radius-ctl);background:var(--db-text);color:var(--db-bg);display:grid;place-items:center;flex:none}
 
 /* Cabecera */
 .top{display:flex;align-items:center;gap:var(--db-s-4)}
@@ -109,7 +109,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .cell--now{background:var(--db-accent);color:var(--db-on-accent);transform:scale(1.06)}
 .cells--dense{gap:var(--db-s-1)}
 .cells--dense .cell{height:clamp(24px, 2.6vw, 44px);font-size:var(--db-fs-1)}
-.transport{display:flex;gap:var(--db-s-3);align-items:center}
+.transport{display:flex;flex-direction:column;gap:var(--db-s-2);align-items:stretch}
+.transport .btn--icon{width:var(--db-play)}
 
 /* Tempo */
 .bpm{font-size:var(--db-fs-5);font-weight:700;min-width:2.2em;text-align:center}
@@ -172,7 +173,8 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   .row{flex-wrap:wrap;gap:var(--db-s-4)}
   .counter{border-right:0;padding-right:0;flex-direction:row;align-items:baseline;gap:var(--db-s-3);flex-basis:100%}
   .block{flex-basis:100%}
-  .transport{margin-left:auto}
+  .transport{flex-direction:row;flex-basis:100%}
+  .transport .play{flex:1;width:auto}
   .slider{flex-basis:100%;order:5}
   .stopcard{padding:var(--db-s-4)}
   .stopcard__body{grid-template-columns:minmax(0,1fr)}

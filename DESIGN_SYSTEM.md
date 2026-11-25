@@ -39,14 +39,14 @@ Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más `--db-fs-counter` (el número de
 - `--db-radius-cell`: celdas del bloque, tiras y pistas.
 - `--db-radius-card`: el escenario (zona táctil).
 - `--db-radius-switch`: solo el interruptor.
-- Excepción documentada: el botón de play es circular. Es el único control principal y se reconoce como transporte.
+- Sin excepciones: el play también usa `--db-radius-ctl`. Play y reiniciar van apilados en vertical para dejar el ancho a las celdas del bloque.
 
 ## Espaciado
 Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajustes ópticos.
 
 ## Componentes
 - `.btn` (+ `--icon`, `--on`): todos los botones salvo play. 44 px de objetivo mínimo.
-- `.play`: transporte.
+- `.play`: transporte; cuadrado, con reiniciar debajo.
 - `.seg`: elección exclusiva de 2-4 opciones.
 - `.seg--grid`: la misma elección en rejilla (acentos por tiempo). Con `.pat`, los patrones de stop time: nombre, compases (4+4) y una miniatura de puntos llenos (suenan) y huecos (silencio).
 - `.stopcard`: el stop time vive en la pantalla principal, bajo el tempo. Plegado muestra título, resumen y un botón `+` (gira a × cuando está activo). Activo muestra patrones, compases que suenan y callan, y acentos. Mientras suena o en pantalla completa se pliega a su resumen para que la cuenta crezca. Atajo `X`.
