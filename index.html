@@ -14,7 +14,7 @@
   --db-early:#7FA8FF; --db-late:#FFB36B; --db-scrim:#05060F;
   --db-glow:0 0 .35em color-mix(in srgb, var(--db-beat-on) 35%, transparent);
 
-  --db-radius-ctl:12px; --db-radius-cell:8px; --db-radius-card:16px; --db-radius-switch:16px;
+  --db-radius-ctl:12px; --db-radius-cell:8px; --db-radius-card:16px; --db-radius-switch:16px; --db-radius-mark:2px;
 
   --db-fs-1:11px; --db-fs-2:13px; --db-fs-3:15px; --db-fs-4:18px; --db-fs-5:32px;
   --db-fs-counter:clamp(56px, 8vw, 104px);
@@ -116,7 +116,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 
 /* Tempo */
 .bpm{font-size:var(--db-fs-5);font-weight:700;min-width:2.2em;text-align:center}
-.slider{flex:1;min-width:80px}
+.slider{flex:0 1 360px;min-width:80px;margin-right:auto}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:var(--db-radius-cell);background:linear-gradient(90deg,var(--db-accent) var(--p,40%),var(--db-surface-2) var(--p,40%));outline:none;margin:0}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--db-text);border:0;cursor:pointer}
 input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--db-text);border:0;cursor:pointer}
@@ -137,21 +137,27 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 .seg button{flex:1;height:40px;border-radius:var(--db-radius-cell);font-size:var(--db-fs-2);color:var(--db-text-2)}
 .seg button[aria-pressed=true]{background:var(--db-text);color:var(--db-bg);font-weight:600}
 .seg--grid{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr))}
-.seg--grid .pat{height:auto;padding:var(--db-s-2) var(--db-s-1);display:flex;flex-direction:column;align-items:center;gap:var(--db-s-1)}
-.pat small{font-size:var(--db-fs-1);opacity:.8}
-.pat__viz{display:flex;gap:1px;flex-wrap:wrap;justify-content:center}
-.pat__viz i{width:5px;height:5px;border-radius:50%;box-shadow:inset 0 0 0 1px currentColor;opacity:.6}
+.pats{display:flex;gap:var(--db-s-2);overflow-x:auto;scroll-snap-type:x proximity;padding:var(--db-s-2);border-radius:var(--db-radius-ctl);background:var(--db-bg);scrollbar-width:thin;scrollbar-color:var(--db-line) transparent}
+.pat{flex:1 0 auto;min-width:120px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:var(--db-s-2);padding:var(--db-s-3) var(--db-s-4);border-radius:var(--db-radius-cell);color:var(--db-text-2);text-align:left}
+.pat:hover{background:var(--db-surface-2);color:var(--db-text)}
+.pat b{font-size:var(--db-fs-4);color:var(--db-text)}
+.pat small{font-size:var(--db-fs-2)}
+.pat[aria-pressed=true]{background:var(--db-text);color:var(--db-bg)}
+.pat[aria-pressed=true] b{color:var(--db-bg)}
+.pat__viz{display:flex;gap:2px}
+.pat__viz i{width:8px;height:20px;border-radius:var(--db-radius-mark);box-shadow:inset 0 0 0 1.5px currentColor;opacity:.55}
 .pat__viz i.on{background:currentColor;box-shadow:none;opacity:1}
 .stopcard{border:1px solid var(--db-line);border-radius:var(--db-radius-card);background:var(--db-surface);padding:var(--db-s-4) var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-4)}
-.stopcard__head{display:flex;align-items:center;justify-content:space-between;gap:var(--db-s-4)}
-.stopcard__head .hint{margin-top:var(--db-s-1)}
-.stopcard__add svg{transition:transform .2s}
-.stopcard__add[aria-pressed=true]{border-color:var(--db-accent);color:var(--db-accent)}
-.stopcard__add[aria-pressed=true] svg{transform:rotate(45deg)}
-.stopcard__body{display:grid;grid-template-columns:minmax(0,2.4fr) auto minmax(0,1fr);gap:var(--db-s-5);align-items:start}
-.stopcard__pats .seg--grid{--cols:9}
+.stopcard__copy{grid-column:1 / -1}
+.stop-toggle{display:inline-flex;gap:var(--db-s-2);align-items:center;font-weight:600;color:var(--db-text)}
+.stop-toggle svg{transition:transform .2s}
+.stop-toggle__p{font-weight:400;color:var(--db-text-2)}
+.stop-toggle[aria-pressed=true]{border-color:var(--db-accent);color:var(--db-accent)}
+.stop-toggle[aria-pressed=true] svg{transform:rotate(45deg)}
+.stopcard__body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--db-s-5);align-items:start}
+.stopcard__pats{grid-column:1 / -1}
 /* Mientras suena, el stop time se pliega a su resumen para que la cuenta crezca; se configura en pausa */
-.is-fs .stopcard__body,.is-playing .stopcard__body{display:none}
+.is-fs .stopcard,.is-playing .stopcard{display:none}
 .status--warn{color:var(--db-accent);font-weight:600}
 .stepper{display:flex;align-items:center;gap:var(--db-s-2)}
 .stepper output{min-width:3.2em;text-align:center;font-size:var(--db-fs-4);font-weight:600}
@@ -180,8 +186,8 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   .slider{flex-basis:100%;order:5}
   .stopcard{padding:var(--db-s-4)}
   .stopcard__body{grid-template-columns:minmax(0,1fr)}
-  .stopcard__pats .seg--grid{--cols:3}
   #tapT{margin-left:auto}
+  .stop-toggle{flex-basis:100%;justify-content:center}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
@@ -239,19 +245,18 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
     <button class="btn btn--icon" id="up" aria-label="Subir tempo">+</button>
     <div class="slider"><input type="range" id="bpmR" min="30" max="260" aria-label="Tempo" /></div>
     <button class="btn" id="tapT">Tap tempo</button>
+    <button class="btn stop-toggle" id="stopAdd" aria-pressed="false" aria-label="Añadir stop time">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Stop time</span><span class="stop-toggle__p num" id="stopAddP"></span>
+    </button>
   </section>
 
-  <section class="stopcard" id="stopCard">
-    <div class="stopcard__head">
-      <div><h3 class="h">Stop time</h3><p class="hint" id="stopCopy"></p></div>
-      <button class="btn btn--icon stopcard__add" id="stopAdd" aria-pressed="false" aria-label="Añadir stop time">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <div class="stopcard__body" id="stopBody" hidden>
+  <section class="stopcard" id="stopCard" hidden>
+    <div class="stopcard__body" id="stopBody">
+      <p class="hint stopcard__copy" id="stopCopy"></p>
       <div class="field stopcard__pats">
         <span class="lbl">Patrón</span>
-        <div class="seg seg--grid" id="segPattern"></div>
+        <div class="pats" id="segPattern" role="listbox" aria-label="Patrones de stop time"></div>
         <p class="hint" id="patternCopy"></p>
       </div>
       <div class="field">
@@ -654,12 +659,15 @@ function renderSheet(){
   press('segFeel', S.feel); press('segBlock', S.block); press('segTheme', S.theme);
   $('stopAdd').setAttribute('aria-pressed', S.stopOn);
   $('stopAdd').setAttribute('aria-label', S.stopOn ? 'Quitar stop time' : 'Añadir stop time');
-  $('stopBody').hidden = !S.stopOn;
+  $('stopCard').hidden = !S.stopOn;
+  $('stopAddP').textContent = S.stopOn ? (patternKey() ? PATTERNS[patternKey()].name + ' ' : '') + S.sound + '+' + S.silent : '';
   const pk = patternKey(), pat = $('segPattern');
   pat.innerHTML = Object.entries(PATTERNS).map(([k,p])=>{
-    const viz = Array.from({length:Math.min(16, p.sound+p.silent)}, (_,i)=>`<i class="${i<p.sound ? 'on' : ''}"></i>`).join('');
+    const viz = Array.from({length:p.sound+p.silent}, (_,i)=>`<i class="${i<p.sound ? 'on' : ''}"></i>`).join('');
     return `<button class="pat" data-v="${k}" aria-pressed="${k===pk}" aria-label="${p.name}: ${p.sound} suenan, ${p.silent} en silencio"><b>${p.name}</b><small class="num">${p.sound}+${p.silent}</small><span class="pat__viz" aria-hidden="true">${viz}</span></button>`;
   }).join('');
+  const sel = pat.querySelector('[aria-pressed=true]');
+  if(sel && !$('stopCard').hidden) pat.scrollLeft = Math.max(0, sel.offsetLeft - pat.clientWidth/2 + sel.offsetWidth/2);
   $('stopCopy').textContent = !S.stopOn ? 'Añádelo y el metrónomo te dejará compases en silencio. La barra de tiempo te guía.'
     : (R.playing && R.shownBar!=null && R.shownBar < R.stopAnchor) ? 'Listo: entra en el próximo compás.'
     : `${pk ? PATTERNS[pk].name + ' · ' : ''}${S.sound} ${S.sound===1?'compás suena':'compases suenan'} · ${S.silent} ${S.silent===1?'lo llevas':'los llevas'} tú.` + (R.playing ? ' Pausa para cambiarlo.' : '');
