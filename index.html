@@ -19,7 +19,7 @@
   --db-fs-1:11px; --db-fs-2:13px; --db-fs-3:15px; --db-fs-4:18px; --db-fs-5:32px;
   --db-fs-counter:clamp(56px, 8vw, 104px);
 
-  --db-s-1:4px; --db-s-2:8px; --db-s-3:12px; --db-s-4:16px; --db-s-5:24px;
+  --db-s-1:4px; --db-s-2:8px; --db-s-3:12px; --db-s-4:16px; --db-s-5:24px; --db-s-6:32px;
   --db-ctl:44px; --db-play:64px;
   --db-font:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -63,8 +63,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .top__r{display:flex;gap:var(--db-s-2)}
 
 /* Escenario: la cuenta */
-.stage{flex:1;min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);user-select:none;touch-action:manipulation;cursor:pointer;border-radius:var(--db-radius-card);position:relative}
-.count{display:flex;align-items:baseline;justify-content:center;font-weight:800;line-height:.8;letter-spacing:-.03em;margin-bottom:var(--db-s-5)} /* tamaño: fitCount() lo ajusta al escenario */
+.stage{flex:1;min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);user-select:none;border-radius:var(--db-radius-card);position:relative}
+.count-wrap{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:var(--db-s-6)}
+.count{display:flex;align-items:baseline;justify-content:center;font-weight:800;line-height:.8;letter-spacing:-.03em;margin-bottom:var(--db-s-4)} /* tamaño: fitCount() lo ajusta al escenario */
 .beat{display:flex;align-items:baseline}
 .beat__n{min-width:.62em;text-align:center;color:var(--db-text-3);transition:color .06s}
 .beat__m{font-size:.3em;min-width:.5em;margin:0 .2em;text-align:center;color:var(--db-text-4);transition:color .06s}
@@ -75,8 +76,20 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .count.is-ci .beat__n.is-on{color:var(--db-text);text-shadow:none}
 .status{position:absolute;left:0;right:0;bottom:var(--db-s-2);font-size:var(--db-fs-4);color:var(--db-text-2);min-height:1.4em;text-align:center}
 .status b{color:var(--db-text)}
-.stage.is-flash::after{content:"";position:absolute;inset:0;border-radius:var(--db-radius-card);box-shadow:inset 0 0 0 2px var(--db-accent);opacity:0;animation:db-flash .25s ease-out}
-@keyframes db-flash{from{opacity:.6}to{opacity:0}}
+
+/* Barra de tiempo: avanza bajo los números, también en silencio (la guía para agarrarse) */
+.sweep{position:relative;height:12px;border-radius:var(--db-radius-cell);background:var(--db-surface-2);margin-top:var(--db-s-2)}
+.sweep__fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:var(--db-radius-cell);background:color-mix(in srgb, var(--db-accent) 35%, transparent)}
+.sweep__tick{position:absolute;top:calc(-1 * var(--db-s-1));bottom:calc(-1 * var(--db-s-1));width:2px;transform:translateX(-50%);background:var(--db-text-4)}
+.sweep__tick--one{width:4px;background:var(--db-text-3)}
+.sweep__head{position:absolute;top:50%;left:0;width:24px;height:24px;border-radius:50%;transform:translate(-50%,-50%);background:var(--db-text-2);opacity:0}
+.sweep.is-on .sweep__head{opacity:1}
+/* En silencio la barra gana intensidad (--heat de 0 a 1): más gruesa, más cálida y con más brillo según se acerca la vuelta del sonido. No depende solo del color. */
+.sweep.is-silent{height:calc(12px + var(--heat, 0) * 12px)}
+.sweep.is-silent .sweep__fill{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent))}
+.sweep.is-silent .sweep__head{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent));transform:translate(-50%,-50%) scale(calc(1 + var(--heat, 0) * .6));box-shadow:0 0 calc(var(--heat, 0) * 28px) color-mix(in srgb, var(--db-late) 70%, transparent)}
+.sweep.is-silent .sweep__tick{background:var(--db-text-3)}
+.status__land{font-weight:600}
 
 /* Contador de compases */
 .counter{display:flex;flex-direction:column;gap:var(--db-s-1);padding-right:var(--db-s-5);border-right:1px solid var(--db-line);min-width:7.5ch}
@@ -104,18 +117,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--db-text);border:0;cursor:pointer}
 input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--db-accent)}
 
-/* Precisión: antes = early (azul), después = late (naranja), a tiempo = texto. Nunca solo color: también posición. */
-.prec{flex:1;display:flex;flex-direction:column;gap:var(--db-s-2)}
-.strip{position:relative;height:40px;border-radius:var(--db-radius-cell);background:var(--db-surface);overflow:hidden;max-width:640px}
-.strip__zone{position:absolute;left:42.5%;width:15%;top:0;bottom:0;background:color-mix(in srgb, var(--db-text) 6%, transparent)}
-.strip__center{position:absolute;left:50%;top:var(--db-s-2);bottom:var(--db-s-2);width:2px;margin-left:-1px;background:var(--db-text-3)}
-.strip__t{position:absolute;top:50%;transform:translateY(-50%);font-size:var(--db-fs-1)}
-.strip__t--l{left:var(--db-s-3);color:var(--db-early)}
-.strip__t--r{right:var(--db-s-3);color:var(--db-late)}
-.dot{position:absolute;top:50%;width:10px;height:10px;transform:translate(-50%,-50%);border-radius:50%}
-.result{min-width:260px;text-align:right}
-.result__big{font-size:var(--db-fs-5);font-weight:700}
-.result__sub{font-size:var(--db-fs-2);color:var(--db-text-2)}
+
 
 /* Panel de ajustes */
 .scrim{position:fixed;inset:0;background:color-mix(in srgb, var(--db-scrim) 55%, transparent);opacity:0;pointer-events:none;transition:opacity .2s}
@@ -154,7 +156,6 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   .counter{border-right:0;padding-right:0;flex-direction:row;align-items:baseline;gap:var(--db-s-3);flex-basis:100%}
   .block{flex-basis:100%}
   .transport{margin-left:auto}
-  .result{text-align:left;min-width:0;flex-basis:100%}
   .slider{flex-basis:100%;order:5}
   #tapT{margin-left:auto}
 }
@@ -179,8 +180,11 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
     </div>
   </header>
 
-  <main class="stage" id="stage" aria-label="Cuenta. Toca para marcar tu golpe">
-    <div class="count is-idle" id="count"></div>
+  <main class="stage" id="stage" aria-label="Cuenta">
+    <div class="count-wrap">
+      <div class="count is-idle" id="count"></div>
+      <div class="sweep" id="sweep" aria-hidden="true"><i class="sweep__fill" id="sweepFill"></i><i class="sweep__head" id="sweepHead"></i></div>
+    </div>
     <div class="status" id="status"></div>
   </main>
 
@@ -213,13 +217,6 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
     <button class="btn" id="tapT">Tap tempo</button>
   </section>
 
-  <section class="row">
-    <div class="prec">
-      <span class="lbl" id="precLbl">Precisión</span>
-      <div class="strip" id="strip"><i class="strip__zone"></i><i class="strip__center"></i><span class="strip__t strip__t--l">antes</span><span class="strip__t strip__t--r">después</span></div>
-    </div>
-    <div class="result" id="result"></div>
-  </section>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -275,9 +272,8 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   </div>
 
   <div class="field">
-    <h3 class="h">Medir con</h3>
-    <div class="seg" id="segInput"><button data-v="touch">Toque</button><button data-v="mic">Micro</button></div>
-    <p class="hint" id="inputHint"></p>
+    <div class="field__h"><h3 class="h">Medir con el micro</h3><button class="switch" id="swMic" aria-label="Medir con el micro"></button></div>
+    <p class="hint">El micro oye tus pies en el silencio y, al volver el sonido, te dice si has llevado bien el tiempo.</p>
     <div class="field" id="micBody" hidden>
       <div class="field__h"><span class="lbl">Sensibilidad</span><span class="lbl" id="micState"></span></div>
       <input type="range" id="sens" min="0" max="100" aria-label="Sensibilidad del micro" />
@@ -293,16 +289,16 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
     <p class="hint">Estudio es claro: mejor en salas con mucha luz.</p>
   </div>
 
-  <div class="keys"><kbd>Espacio</kbd> play · <kbd>T</kbd> marcar golpe · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</div>
+  <div class="keys"><kbd>Espacio</kbd> play · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</div>
 </aside>
 
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, input:'touch', sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
-            frozenPos:0, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
+            barStart:null, centers:[], landing:null, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
 let ctx = null;
 const ON_TIME_MS = 15;
 
@@ -383,14 +379,14 @@ function scheduler(){
 }
 function start(){
   audio();
-  if(S.input==='mic') micOn().then(renderMic);
-  Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, stopAnchor:0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, frozenPos:0, sectionHits:[] });
+  if(S.mic) micOn().then(renderMic);
+  Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, stopAnchor:0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, barStart:null, landing:null, sectionHits:[] });
   scheduler(); R.timer = setInterval(scheduler, 25);
   renderTransport(); requestAnimationFrame(loop);
 }
 function stop(){
   R.playing=false; clearInterval(R.timer); R.events=[];
-  renderTransport(); renderCount(); renderBlock(); renderStatus();
+  renderTransport(); renderCount(); renderBlock(); renderStatus(); paintSweep();
 }
 function toggle(){ R.playing ? stop() : start(); }
 function restart(){ if(R.playing) stop(); start(); }
@@ -404,6 +400,7 @@ function loop(){
   let ev = null;
   while(R.events.length && R.events[0].t <= now) ev = R.events.shift();
   if(ev) show(ev);
+  paintSweep(now);
   requestAnimationFrame(loop);
 }
 function show(ev){
@@ -418,11 +415,12 @@ function show(ev){
     const b = c.children[ev.beat];
     if(b){ const el = ev.k===0 ? b.querySelector('.beat__n') : b.querySelectorAll('.beat__m')[ev.k-1]; el && el.classList.add('is-on'); }
   }
+  if(ev.k===0 && ev.beat===0) R.barStart = ev.t;
+  $('sweep').classList.toggle('is-silent', ev.sil);
   if(ev.bar !== R.shownBar){
     const wasSilent = R.shownSilent;
     R.shownBar = ev.bar; R.shownSilent = ev.sil;
     if(wasSilent && !ev.sil) closeSection();
-    if(!ev.sil && !ev.ci) R.frozenPos = ev.bar;
     renderBlock(); renderStatus();
   }
   if(ev.k===0 && !ev.ci) renderStatus(ev);
@@ -445,9 +443,6 @@ function registerHit(heardT, src){
   const hit = { off: heardT - best.t, sil:best.sil, bar:best.bar };
   R.hits.push(hit); if(R.hits.length>200) R.hits.shift();
   if(best.sil) R.sectionHits.push(hit);
-  renderStrip();
-  if(!S.stopOn) renderResult(stats(R.hits.slice(-16)), 'Últimos golpes');
-  if(src!=='mic'){ const s=$('stage'); s.classList.remove('is-flash'); void s.offsetWidth; s.classList.add('is-flash'); }
 }
 function stats(arr){
   if(!arr.length) return null;
@@ -456,11 +451,14 @@ function stats(arr){
   const sd = Math.sqrt(ms.reduce((a,b)=>a+(b-mean)**2,0)/ms.length);
   return { mean, sd, n:ms.length };
 }
-function closeSection(){ const st = stats(R.sectionHits); R.sectionHits=[]; renderResult(st, 'Último silencio'); }
+/* Al volver el sonido: cómo has llevado el silencio (solo con micro) */
+function closeSection(){
+  const st = stats(R.sectionHits); R.sectionHits=[];
+  R.landing = (S.mic && st) ? { st, until: R.shownBar + 1 } : null;
+}
 function verdict(m){ return Math.abs(m)<ON_TIME_MS ? 'clavado' : m<0 ? 'te adelantas' : 'te retrasas'; }
 function tone(ms){ return Math.abs(ms)<ON_TIME_MS ? 'var(--db-text)' : ms<0 ? 'var(--db-early)' : 'var(--db-late)'; }
 function signed(m){ const r=Math.round(m); return (r>0?'+':r<0?'−':'') + Math.abs(r) + ' ms'; }
-function tapFromEvent(e){ if(ctx) registerHit(heardNow(e.timeStamp), 'touch'); }
 
 /* ===================== Micro ===================== */
 const WORKLET = `class Onset extends AudioWorkletProcessor{
@@ -520,22 +518,65 @@ function renderCount(){
     `<span class="beat"><span class="beat__n">${i+1}</span>${marks.map(m=>`<span class="beat__m">${m}</span>`).join('')}</span>`).join('');
   fitCount();
 }
-/* La cuenta ocupa todo el escenario: el mayor tamaño que cabe a lo ancho y a lo alto */
+/* La cuenta ocupa todo el escenario: el mayor tamaño que cabe a lo ancho y a lo alto, contando con la barra de tiempo */
+function beatCenters(){
+  const c = $('count'), cb = c.getBoundingClientRect();
+  return [...c.querySelectorAll('.beat__n')].map(n=>{ const b = n.getBoundingClientRect(); return b.left + b.width/2 - cb.left; });
+}
+function sweepGeom(w, cs){
+  const n = cs.length, sp = n > 1 ? (cs[n-1] - cs[0]) / (n-1) : w * .8;
+  return { start: cs[0], sp, len: n * sp, extra: Math.max(0, cs[0] + n*sp - w) };
+}
 function fitCount(){
   const st = $('stage'), c = $('count'), box = st.getBoundingClientRect();
   if(!box.width) return;
   c.style.fontSize = '100px';
-  const w = c.scrollWidth, h = 80; /* line-height .8 → 80px de alto a 100px */
-  const fs = Math.min((box.width*0.98)/w*100, (box.height-64)/h*100);
+  const g = sweepGeom(c.scrollWidth, beatCenters());
+  const need = c.scrollWidth + g.extra, h = 80; /* line-height .8 → 80px de alto a 100px */
+  const fs = Math.min((box.width*0.98)/need*100, (box.height-140)/h*100);
   c.style.fontSize = Math.max(40, Math.floor(fs)) + 'px';
+  layoutSweep();
+}
+/* La barra va del 1 al 1 siguiente a velocidad constante; cada marca cae bajo su número */
+function layoutSweep(){
+  const c = $('count'), sw = $('sweep'), cs = beatCenters(), g = sweepGeom(c.getBoundingClientRect().width, cs);
+  sw.style.alignSelf = 'flex-start';
+  sw.style.marginLeft = g.start + 'px';
+  sw.style.width = g.len + 'px';
+  R.sp = g.sp;
+  sw.querySelectorAll('.sweep__tick').forEach(t=>t.remove());
+  cs.forEach((x,i)=>{ const t = document.createElement('i'); t.className = 'sweep__tick' + (i===0 ? ' sweep__tick--one' : ''); t.style.left = (x - g.start) + 'px'; sw.appendChild(t); });
+  paintSweep();
+}
+function paintSweep(now){
+  const sw = $('sweep'), on = R.playing && R.barStart!=null && now!=null;
+  sw.classList.toggle('is-on', on);
+  if(!on){ $('sweepFill').style.width = '0'; $('sweepHead').style.left = '0'; if(!R.playing) sw.classList.remove('is-silent'); return; }
+  const b = Math.max(0, Math.min(S.beats, (now - R.barStart) / (60/S.bpm)));
+  const x = b * (R.sp || 0);
+  $('sweepHead').style.left = x + 'px';
+  $('sweepFill').style.width = x + 'px';
+  if(R.shownSilent && R.shownBar!=null){
+    const total = S.silent * S.beats, into = (cyclePos(R.shownBar) - S.sound) * S.beats + b;
+    sw.style.setProperty('--heat', Math.max(0, Math.min(1, into / total)).toFixed(3));
+  } else sw.style.setProperty('--heat', '0');
 }
 new ResizeObserver(fitCount).observe(document.getElementById('stage'));
 function renderStatus(ev){
   const st = $('status');
   st.classList.remove('status--warn');
-  if(!R.playing){ st.innerHTML = 'Pulsa play. Toca la pantalla o pulsa <b>T</b> en cada golpe para medir tu precisión.'; return; }
+  if(!R.playing){ st.innerHTML = 'Pulsa play o la barra espaciadora.'; return; }
   if(R.shownBar==null || R.shownBar<0){ st.textContent = 'Entrada'; return; }
-  if(R.shownSilent){ st.innerHTML = '<b>Silencio.</b> Tú llevas el tiempo.'; return; }
+  if(R.shownSilent){
+    const lastBar = cyclePos(R.shownBar) === S.sound + S.silent - 1;
+    if(lastBar){ st.classList.add('status--warn'); st.textContent = `Vuelve el sonido en ${S.beats - (ev ? ev.beat : 0)}`; return; }
+    st.innerHTML = '<b>Silencio.</b> Sigue la barra y lleva tú el tiempo.'; return;
+  }
+  if(R.landing && R.shownBar <= R.landing.until){
+    const m = R.landing.st.mean;
+    st.innerHTML = `<span class="status__land" style="color:${tone(m)}">En el silencio: ${verdict(m)} · ${signed(m)}</span>`;
+    return;
+  }
   if(!S.stopOn || R.shownBar < R.stopAnchor){ st.textContent = S.stopOn ? 'El silencio entra en el próximo compás' : ''; return; }
   const left = S.sound - cyclePos(R.shownBar);
   if(left===1){
@@ -551,12 +592,12 @@ function renderBlock(){
   wrap.style.setProperty('--c', Math.min(n,16)); wrap.classList.toggle('cells--dense', n>16);
   $('blockLbl').textContent = `Bloque · ${n} compases`;
   const active = R.playing && R.shownBar!=null && R.shownBar>=0;
-  const bar = active ? (R.shownSilent ? R.frozenPos : R.shownBar) : -1;
+  const bar = active ? R.shownBar : -1;
   const pos = bar>=0 ? bar % n : -1, base = bar>=0 ? bar - pos : 0;
   wrap.innerHTML = Array.from({length:n}, (_,i)=>{
     const cls = ['cell'];
     if(isSilent(base+i)) cls.push('cell--sil');
-    if(i<pos || (i===pos && R.shownSilent)) cls.push('cell--done'); else if(i===pos) cls.push('cell--now');
+    if(i<pos) cls.push('cell--done'); else if(i===pos) cls.push('cell--now');
     return `<div class="${cls.join(' ')}">${i+1}</div>`;
   }).join('');
   const num = $('barNum');
@@ -564,7 +605,7 @@ function renderBlock(){
   num.classList.toggle('is-idle', !active);
   num.classList.toggle('is-frozen', active && R.shownSilent);
   $('barSub').textContent = !active ? (R.playing ? 'Entrada' : ' ')
-    : R.shownSilent ? 'En silencio' : `Bloque ${Math.floor(bar/n)+1} · ${pos+1}/${n}`;
+    : `Bloque ${Math.floor(bar/n)+1} · ${pos+1}/${n}` + (R.shownSilent ? ' · en silencio' : '');
 }
 function renderTransport(){
   $('playIco').innerHTML = R.playing ? '<rect x="5" y="4" width="4" height="14" rx="1"/><rect x="13" y="4" width="4" height="14" rx="1"/>' : '<path d="M6 3.5l13 7.5-13 7.5z"/>';
@@ -575,31 +616,11 @@ function renderTransport(){
 function renderSummary(){
   $('summary').innerHTML = [`<b>${S.beats}/4</b>`, FEEL[S.feel], `Bloque ${S.block}`, S.stopOn ? (patternKey() ? `Stop time ${PATTERNS[patternKey()].name}` : `Stop time ${S.sound}+${S.silent}`) : 'Sin stop time'].join(' · ');
 }
-function renderStrip(){
-  const s = $('strip'), last = R.hits.slice(-16);
-  s.querySelectorAll('.dot').forEach(d=>d.remove());
-  last.forEach((h,i)=>{
-    const ms = h.off*1000, d = document.createElement('i');
-    d.className = 'dot';
-    d.style.left = (50 + Math.max(-48, Math.min(48, ms/2))) + '%';
-    d.style.background = tone(ms);
-    d.style.opacity = .25 + .75*(i+1)/last.length;
-    s.appendChild(d);
-  });
-}
-function renderResult(st, label){
-  if(st) R.lastResult = { st, label };
-  const r = R.lastResult, el = $('result');
-  if(!r){ el.innerHTML = `<div class="result__sub">${S.stopOn ? 'Marca tus golpes en el silencio' : 'Sin golpes todavía'}</div>`; return; }
-  el.innerHTML = `<div class="result__sub">${r.label} · ${r.st.n} golpes</div>
-    <div class="result__big num" style="color:${tone(r.st.mean)}">${signed(r.st.mean)}</div>
-    <div class="result__sub">${verdict(r.st.mean)} · constancia ±${Math.round(r.st.sd)} ms</div>`;
-}
 function renderSheet(){
   $('oBeats').textContent = `${S.beats}/4`;
   $('oSound').textContent = S.sound; $('oSilent').textContent = S.silent;
   const press = (id, v) => document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===String(v)));
-  press('segFeel', S.feel); press('segBlock', S.block); press('segInput', S.input); press('segTheme', S.theme);
+  press('segFeel', S.feel); press('segBlock', S.block); press('segTheme', S.theme);
   $('swStop').setAttribute('aria-pressed', S.stopOn);
   ['stopBody','stopPatterns','stopAnchors'].forEach(id=>$(id).hidden = !S.stopOn);
   const pk = patternKey(), pat = $('segPattern');
@@ -611,10 +632,8 @@ function renderSheet(){
   const on = S.anchors.map((v,i)=>v ? i+1 : 0).filter(Boolean);
   $('anchorCopy').textContent = !on.length ? 'Nada suena. Silencio real.' : `En el silencio suena ${on.length===1 ? 'el tiempo' : 'los tiempos'} ${on.join(', ')}. Ve quitándolos a medida que ganes precisión.`;
   $('swCi').setAttribute('aria-pressed', S.countIn);
-  $('micBody').hidden = S.input!=='mic';
-  $('inputHint').textContent = S.input==='mic'
-    ? 'El micro oye tus pies. Mide solo en los compases en silencio, para no confundirse con el clic.'
-    : 'Toca la pantalla o pulsa T en cada golpe.';
+  $('swMic').setAttribute('aria-pressed', S.mic);
+  $('micBody').hidden = !S.mic;
   $('sens').value = S.sens;
   renderMic();
 }
@@ -624,8 +643,7 @@ function renderMic(){
   if(R.mic){ $('micState').textContent = 'Escuchando'; R.mic.node.port.postMessage(thrFromSens(S.sens)); }
 }
 function renderTheme(){ document.documentElement.dataset.theme = S.theme; }
-function renderPrecLbl(){ $('precLbl').textContent = 'Precisión · ' + (S.input==='mic' ? 'micro' : 'toque'); }
-function renderAll(){ renderTheme(); renderCount(); renderStatus(); renderBlock(); renderTransport(); renderSummary(); renderStrip(); renderResult(); renderSheet(); renderPrecLbl(); }
+function renderAll(){ renderTheme(); renderCount(); renderStatus(); renderBlock(); renderTransport(); renderSummary(); renderSheet(); }
 
 /* ===================== Interacción ===================== */
 function setBpm(v){ S.bpm = Math.max(30, Math.min(260, Math.round(v))); save(); renderTransport(); }
@@ -651,7 +669,6 @@ $('tapT').onclick = ()=>{
   }
   $('tapT').classList.add('btn--on'); clearTimeout(R.tapTO); R.tapTO = setTimeout(()=>$('tapT').classList.remove('btn--on'), 2500);
 };
-$('stage').addEventListener('pointerdown', e=>{ if(S.input==='touch') tapFromEvent(e); });
 $('fs').onclick = toggleFs;
 $('gear').onclick = openSheet; $('summary').onclick = openSheet;
 $('close').onclick = closeSheet; $('scrim').onclick = closeSheet;
@@ -670,8 +687,8 @@ function seg(id, key, cast, after){
 seg('segFeel', 'feel', String, retime);
 seg('segBlock', 'block', Number, retime);
 seg('segTheme', 'theme', String, renderTheme);
-seg('segInput', 'input', String, ()=>{ renderPrecLbl(); if(S.input==='mic') micOn().then(renderMic); else micOff(); });
-$('swStop').onclick = ()=>{ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); renderResult(); reanchor(); };
+$('swMic').onclick = ()=>{ S.mic = !S.mic; save(); renderSheet(); S.mic ? micOn().then(renderMic) : micOff(); };
+$('swStop').onclick = ()=>{ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); reanchor(); };
 $('segPattern').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
   const p = PATTERNS[b.dataset.v]; S.sound = p.sound; S.silent = p.silent; save(); renderSheet(); renderSummary(); reanchor(); };
 $('segAnchors').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
@@ -684,7 +701,6 @@ document.addEventListener('keydown', e=>{
   if(e.repeat || (e.target.tagName==='INPUT' && e.key!==' ')) return;
   const k = e.key.toLowerCase();
   if(e.key===' '){ e.preventDefault(); toggle(); }
-  else if(k==='t') tapFromEvent(e);
   else if(e.key==='ArrowUp'){ e.preventDefault(); setBpm(S.bpm+1); }
   else if(e.key==='ArrowDown'){ e.preventDefault(); setBpm(S.bpm-1); }
   else if(k==='s') $('sheet').classList.contains('is-on') ? closeSheet() : openSheet();
@@ -693,7 +709,7 @@ document.addEventListener('keydown', e=>{
 });
 
 renderAll();
-if(S.input==='mic') $('micState').textContent = 'Pulsa play o Calibrar para activar';
+if(S.mic) $('micState').textContent = 'Pulsa play o Calibrar para activar';
 }
 </script>
 </body>

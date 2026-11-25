@@ -1,5 +1,6 @@
-Fase: 2 · Sistema (desde 2026-11-25)
+Fase: 3 · Construcción (desde 2026-11-25)
 Escala: producto con usuarios (todas las fases)
+Repo: chewim/beatbybeat · Web: https://chewim.github.io/beatbybeat/
 Deuda consciente:
 - 2026-11-25 · El modo micro solo se ha probado sin micrófono real (no funciona dentro del artifact de Claude; sí en GitHub Pages o abriendo el fichero).
 - 2026-11-25 · Bordes de control (`--db-line`) por debajo de 3:1; hoy no son la única pista para identificar controles.

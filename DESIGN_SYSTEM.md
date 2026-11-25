@@ -15,7 +15,7 @@ La luminosidad marca lo activo; el color marca la dirección del error. Nada dep
 - `--db-text` → `--db-text-4`: de más a menos presencia. `text-3` es el número inactivo de la cuenta (≥3:1 sobre fondo); `text-4` es lo apagado a propósito (marcas `&` y la pantalla en silencio).
 - `--db-beat-on`: el tiempo activo. En Escenario es el acento; en Estudio, negro. Siempre el elemento más luminoso/oscuro de la pantalla.
 - `--db-accent` / `--db-on-accent`: progreso (bloque, slider, foco, switch). No para texto largo.
-- `--db-early` (azul) / `--db-late` (naranja): te adelantas / te retrasas. A tiempo (±15 ms) usa `--db-text`. Nunca verde/rojo: es el par que confunde la forma más común de daltonismo.
+- `--db-early` (azul) / `--db-late` (naranja): te adelantas / te retrasas (aviso de aterrizaje con micro). A tiempo (±15 ms) usa `--db-text`. Nunca verde/rojo. `--db-late` es también el final de la rampa de intensidad del silencio.
 
 ### Contraste comprobado (WCAG 2)
 | Par | Escenario | Estudio |
@@ -54,7 +54,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.stepper`: valores numéricos con límite.
 - `.cell` (+ `--sil`, `--done`, `--now`): compases del bloque. Los de silencio van huecos.
 - `.counter`: el número de compás. En silencio se congela en gris.
-- `.strip` + `.dot`: precisión, por posición (antes/después) y color.
+- `.sweep`: barra de tiempo bajo la cuenta. Avanza del 1 al 1 siguiente a velocidad constante, con una marca bajo cada número. En silencio es la guía: gana intensidad (grosor, calor y brillo vía `--heat`) hasta que vuelve el sonido.
 
 ## Estados del ejercicio
-idle · entrada · sonando · silencio. En silencio, la cuenta y el bloque dejan de avanzar: si la pantalla siguiera contando, no se mediría el tiempo interno.
+idle · entrada · sonando · silencio. En silencio los números se apagan, pero la barra de tiempo, el contador y el bloque siguen avanzando: es la guía a la que agarrarse sin sonido. El último compás avisa con una cuenta atrás.
