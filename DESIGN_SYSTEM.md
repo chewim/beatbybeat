@@ -29,7 +29,17 @@ La luminosidad marca lo activo; el color marca la dirección del error. Nada dep
 | Antes / superficie | 7,3 | 7,0 |
 | Después / superficie | 9,7 | 5,2 |
 
-Pendiente: los bordes de `--db-line` no llegan a 3:1. Hoy los controles se identifican por su texto o icono; si un control dependiera solo del borde, hay que subirlo.
+| Borde de control (`--db-line-strong`) / fondo | 3,5 | 3,3 |
+
+Los bordes de control ya cumplen 3:1 (WCAG 1.4.11). `--db-line` queda solo para separadores, que no lo necesitan.
+
+## Luz y profundidad
+Inspirado en el dark mode de producto tipo Linear/Raycast (bordes finos, canto de luz arriba, foco radial), adaptado a la paleta de escenario. Nada chillón: la luz sale del acento a baja opacidad y de bordes más claros.
+- `--db-backdrop`: fondo con un foco de escenario arriba (acento al 7-9 %) que se oscurece hacia abajo (`--db-bg-deep`).
+- `--db-grad-ctl` / `--db-grad-surface`: degradado vertical muy suave en controles y superficies; arriba un poco más claro.
+- `--db-edge`: canto de luz de 1 px arriba (relieve). `--db-drop`: sombra corta abajo. `--db-well`: hundido, para pistas, segmentados y la barra.
+- `--db-halo`: brillo suave del acento para lo activo (play sonando, compás actual, stop time activo, interruptor encendido). Nunca en reposo.
+- Todo vive en una capa al final del CSS ("Luz y profundidad") que se apoya en los componentes; para quitarla basta con borrar esa capa.
 
 ## Tipografía
 Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más `--db-fs-counter` (el número de compás, muy visible a distancia). La cuenta no tiene token: `fitCount()` le da el mayor tamaño que cabe en el escenario, porque se baila mirando desde lejos. En pantalla completa se oculta la fila de tempo para que crezca más. No añadir tamaños sin quitar otro.

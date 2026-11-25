@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="escenario">
+<html lang="es" data-theme="escenario" class="is-loading">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -13,6 +13,15 @@
   --db-accent:#FFE2A8; --db-on-accent:#1A1406; --db-beat-on:#FFE2A8;
   --db-early:#7FA8FF; --db-late:#FFB36B; --db-scrim:#05060F;
   --db-glow:0 0 .35em color-mix(in srgb, var(--db-beat-on) 35%, transparent);
+  /* Luz y profundidad: fondo con foco de escenario, bordes de control a 3:1, canto de luz arriba y sombra abajo */
+  --db-bg-deep:#080A1A; --db-line-strong:#5F67A3; --db-light:#FFFFFF; --db-dark:#000000;
+  --db-edge:inset 0 1px 0 color-mix(in srgb, var(--db-light) 9%, transparent);
+  --db-drop:0 2px 8px -2px color-mix(in srgb, var(--db-dark) 55%, transparent);
+  --db-well:inset 0 2px 6px color-mix(in srgb, var(--db-dark) 45%, transparent);
+  --db-grad-ctl:linear-gradient(180deg, color-mix(in srgb, var(--db-surface-2) 82%, var(--db-text)) 0%, var(--db-surface) 100%);
+  --db-grad-surface:linear-gradient(180deg, color-mix(in srgb, var(--db-surface) 92%, var(--db-text)) 0%, var(--db-surface) 60%);
+  --db-backdrop:radial-gradient(ellipse 70% 55% at 50% -12%, color-mix(in srgb, var(--db-accent) 9%, transparent) 0%, transparent 70%), linear-gradient(180deg, var(--db-bg) 0%, var(--db-bg-deep) 100%);
+  --db-halo:0 0 22px -4px color-mix(in srgb, var(--db-accent) 50%, transparent);
 
   --db-radius-ctl:12px; --db-radius-cell:8px; --db-radius-card:16px; --db-radius-switch:16px; --db-radius-mark:2px;
 
@@ -30,6 +39,14 @@
   --db-accent:#1F45E0; --db-on-accent:#FFFFFF; --db-beat-on:#121212;
   --db-early:#1F45E0; --db-late:#C2410C; --db-scrim:#121212;
   --db-glow:none;
+  --db-bg-deep:#E9E6DF; --db-line-strong:#8D877B; --db-light:#FFFFFF; --db-dark:#3A3226;
+  --db-edge:inset 0 1px 0 color-mix(in srgb, var(--db-light) 90%, transparent);
+  --db-drop:0 2px 6px -2px color-mix(in srgb, var(--db-dark) 22%, transparent);
+  --db-well:inset 0 2px 4px color-mix(in srgb, var(--db-dark) 12%, transparent);
+  --db-grad-ctl:linear-gradient(180deg, var(--db-light) 0%, color-mix(in srgb, var(--db-surface-2) 55%, var(--db-light)) 100%);
+  --db-grad-surface:linear-gradient(180deg, var(--db-light) 0%, color-mix(in srgb, var(--db-bg) 40%, var(--db-light)) 100%);
+  --db-backdrop:radial-gradient(ellipse 70% 55% at 50% -12%, color-mix(in srgb, var(--db-accent) 7%, transparent) 0%, transparent 70%), linear-gradient(180deg, var(--db-bg) 0%, var(--db-bg-deep) 100%);
+  --db-halo:0 0 18px -4px color-mix(in srgb, var(--db-accent) 40%, transparent);
 }
 
 *{box-sizing:border-box;min-width:0}
@@ -174,6 +191,33 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
 
 /* Pantalla completa (modo baile): fuera el tempo para que la cuenta crezca; se ajusta con ↑/↓ */
 .is-fs .row--tempo{display:none}
+/* ===== Luz y profundidad (capa sobre los componentes) =====
+   Referencias: dark mode de producto tipo Linear/Raycast (bordes finos, canto de luz arriba, foco radial), adaptado a
+   la paleta de escenario. Nada chillón: la luz sale del acento a baja opacidad y de bordes más claros. */
+body{background:var(--db-backdrop);background-attachment:fixed}
+.btn,.summary{background:var(--db-grad-ctl);border-color:var(--db-line-strong);box-shadow:var(--db-edge), var(--db-drop);transition:border-color .15s, box-shadow .15s, color .15s}
+.btn:hover,.summary:hover{border-color:var(--db-text-2);box-shadow:var(--db-edge), var(--db-drop), 0 0 16px -6px color-mix(in srgb, var(--db-text) 30%, transparent)}
+.btn--on,.stop-toggle[aria-pressed=true]{border-color:var(--db-accent);background:linear-gradient(180deg, color-mix(in srgb, var(--db-accent) 14%, var(--db-surface-2)) 0%, var(--db-surface) 100%);box-shadow:var(--db-edge), var(--db-halo)}
+.play{background:linear-gradient(180deg, var(--db-light) 0%, var(--db-text) 100%);box-shadow:inset 0 -2px 0 color-mix(in srgb, var(--db-dark) 18%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--db-text) 45%, transparent)}
+[data-theme=estudio] .play{background:linear-gradient(180deg, color-mix(in srgb, var(--db-text) 80%, var(--db-light)) 0%, var(--db-text) 100%)}
+.is-playing .play{box-shadow:inset 0 -2px 0 color-mix(in srgb, var(--db-dark) 18%, transparent), var(--db-halo), 0 0 0 2px color-mix(in srgb, var(--db-accent) 55%, transparent)}
+.seg,.pats,.meter{box-shadow:var(--db-well)}
+.seg button[aria-pressed=true],.pat[aria-pressed=true]{box-shadow:var(--db-edge), var(--db-drop)}
+.stopcard,.sheet{background:var(--db-grad-surface);border-color:var(--db-line-strong);box-shadow:var(--db-edge), var(--db-drop)}
+.cell{background:linear-gradient(180deg, color-mix(in srgb, var(--db-surface-2) 88%, var(--db-text)) 0%, var(--db-surface-2) 100%);box-shadow:var(--db-edge)}
+.cell--done{background:linear-gradient(180deg, color-mix(in srgb, var(--db-accent) 88%, var(--db-light)) 0%, color-mix(in srgb, var(--db-accent) 75%, var(--db-bg)) 100%);box-shadow:var(--db-edge)}
+.cell--now{background:linear-gradient(180deg, color-mix(in srgb, var(--db-accent) 80%, var(--db-light)) 0%, var(--db-accent) 100%);box-shadow:var(--db-edge), var(--db-halo)}
+.cell--sil{background:color-mix(in srgb, var(--db-accent) 10%, transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--db-accent) 25%, transparent)}
+.cell--sil.cell--done{background:color-mix(in srgb, var(--db-accent) 32%, transparent)}
+.cell--sil.cell--now{background:color-mix(in srgb, var(--db-accent) 50%, transparent);box-shadow:inset 0 0 0 2px var(--db-accent), var(--db-halo)}
+.sweep{box-shadow:var(--db-well)}
+.sweep__fill{background:linear-gradient(90deg, color-mix(in srgb, var(--db-accent) 15%, transparent), color-mix(in srgb, var(--db-accent) 45%, transparent))}
+.sweep.is-on .sweep__head{box-shadow:0 0 14px -2px color-mix(in srgb, var(--db-text) 50%, transparent)}
+.switch{box-shadow:var(--db-well)}
+.switch[aria-pressed=true]{box-shadow:var(--db-halo)}
+input[type=range]{box-shadow:var(--db-well)}
+input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop)}
+
 @media (max-width:760px){
   .summary{display:none}
   .app{gap:var(--db-s-2)}
@@ -189,6 +233,8 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   #tapT{margin-left:auto}
   .stop-toggle{flex-basis:100%;justify-content:center}
 }
+/* Sin animaciones en la primera pintura (estado guardado) */
+.is-loading *{transition:none!important}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
   .cell--now{transform:none}
@@ -765,6 +811,7 @@ document.addEventListener('keydown', e=>{
 });
 
 renderAll();
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('is-loading')));
 if(S.mic) $('micState').textContent = 'Pulsa play o Calibrar para activar';
 }
 </script>
