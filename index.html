@@ -18,7 +18,6 @@
 
   --db-fs-1:11px; --db-fs-2:13px; --db-fs-3:15px; --db-fs-4:18px; --db-fs-5:32px;
   --db-fs-counter:clamp(56px, 8vw, 104px);
-  --db-fs-count:min(26vh, calc(88vw / var(--u, 7)));
 
   --db-s-1:4px; --db-s-2:8px; --db-s-3:12px; --db-s-4:16px; --db-s-5:24px;
   --db-ctl:44px; --db-play:64px;
@@ -44,7 +43,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .h{font-size:var(--db-fs-3);font-weight:600;margin:0}
 
 /* Estructura */
-.app{min-height:100vh;display:flex;flex-direction:column;gap:var(--db-s-4);max-width:1400px;margin:0 auto;padding:var(--db-s-5) clamp(16px,4vw,48px) calc(var(--db-s-5) + env(safe-area-inset-bottom))}
+.app{min-height:100vh;display:flex;flex-direction:column;gap:var(--db-s-4);margin:0 auto;padding:var(--db-s-5) clamp(16px,4vw,48px) calc(var(--db-s-5) + env(safe-area-inset-bottom))}
 .row{display:flex;align-items:center;gap:var(--db-s-5);padding:var(--db-s-4) 0;border-top:1px solid var(--db-line)}
 
 /* Botones: un solo radio para todos; el play es la única excepción circular */
@@ -64,17 +63,17 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .top__r{display:flex;gap:var(--db-s-2)}
 
 /* Escenario: la cuenta */
-.stage{flex:1;min-height:38vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);user-select:none;touch-action:manipulation;cursor:pointer;border-radius:var(--db-radius-card);position:relative}
-.count{display:flex;align-items:baseline;justify-content:center;font-weight:700;line-height:1;letter-spacing:-.02em;font-size:var(--db-fs-count)}
+.stage{flex:1;min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);user-select:none;touch-action:manipulation;cursor:pointer;border-radius:var(--db-radius-card);position:relative}
+.count{display:flex;align-items:baseline;justify-content:center;font-weight:800;line-height:.8;letter-spacing:-.03em;margin-bottom:var(--db-s-5)} /* tamaño: fitCount() lo ajusta al escenario */
 .beat{display:flex;align-items:baseline}
 .beat__n{min-width:.62em;text-align:center;color:var(--db-text-3);transition:color .06s}
-.beat__m{font-size:.42em;min-width:.5em;margin:0 .22em;text-align:center;color:var(--db-text-4);transition:color .06s}
+.beat__m{font-size:.3em;min-width:.5em;margin:0 .2em;text-align:center;color:var(--db-text-4);transition:color .06s}
 .beat__n.is-on{color:var(--db-beat-on);text-shadow:var(--db-glow)}
 .beat__m.is-on{color:var(--db-text-2)}
 .count.is-idle .beat__n{color:var(--db-text-2)}
 .count.is-silent .beat__n,.count.is-silent .beat__m{color:var(--db-text-4);text-shadow:none}
 .count.is-ci .beat__n.is-on{color:var(--db-text);text-shadow:none}
-.status{font-size:var(--db-fs-3);color:var(--db-text-2);min-height:1.4em;text-align:center}
+.status{position:absolute;left:0;right:0;bottom:var(--db-s-2);font-size:var(--db-fs-4);color:var(--db-text-2);min-height:1.4em;text-align:center}
 .status b{color:var(--db-text)}
 .stage.is-flash::after{content:"";position:absolute;inset:0;border-radius:var(--db-radius-card);box-shadow:inset 0 0 0 2px var(--db-accent);opacity:0;animation:db-flash .25s ease-out}
 @keyframes db-flash{from{opacity:.6}to{opacity:0}}
@@ -145,10 +144,12 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 .keys{font-size:var(--db-fs-1);color:var(--db-text-2);line-height:1.8;margin-top:auto}
 kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);border-radius:var(--db-radius-cell);background:var(--db-bg);border:1px solid var(--db-line);color:var(--db-text-2)}
 
+/* Pantalla completa (modo baile): fuera el tempo para que la cuenta crezca; se ajusta con ↑/↓ */
+.is-fs .row--tempo{display:none}
 @media (max-width:760px){
   .summary{display:none}
   .app{gap:var(--db-s-2)}
-  .stage{min-height:30vh}
+  .stage{min-height:46vh}
   .row{flex-wrap:wrap;gap:var(--db-s-4)}
   .counter{border-right:0;padding-right:0;flex-direction:row;align-items:baseline;gap:var(--db-s-3);flex-basis:100%}
   .block{flex-basis:100%}
@@ -203,7 +204,7 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
     </div>
   </section>
 
-  <section class="row">
+  <section class="row row--tempo">
     <span class="lbl">BPM</span>
     <button class="btn btn--icon" id="down" aria-label="Bajar tempo">−</button>
     <span class="bpm num" id="bpm">100</span>
@@ -517,8 +518,18 @@ function renderCount(){
   c.className = 'count is-idle'; c.dataset.ci = '0';
   c.innerHTML = Array.from({length:S.beats}, (_,i)=>
     `<span class="beat"><span class="beat__n">${i+1}</span>${marks.map(m=>`<span class="beat__m">${m}</span>`).join('')}</span>`).join('');
-  c.style.setProperty('--u', (S.beats * (S.feel==='triplet' ? 1.5 : 1.12)).toFixed(2));
+  fitCount();
 }
+/* La cuenta ocupa todo el escenario: el mayor tamaño que cabe a lo ancho y a lo alto */
+function fitCount(){
+  const st = $('stage'), c = $('count'), box = st.getBoundingClientRect();
+  if(!box.width) return;
+  c.style.fontSize = '100px';
+  const w = c.scrollWidth, h = 80; /* line-height .8 → 80px de alto a 100px */
+  const fs = Math.min((box.width*0.98)/w*100, (box.height-64)/h*100);
+  c.style.fontSize = Math.max(40, Math.floor(fs)) + 'px';
+}
+new ResizeObserver(fitCount).observe(document.getElementById('stage'));
 function renderStatus(ev){
   const st = $('status');
   st.classList.remove('status--warn');
@@ -618,6 +629,7 @@ function renderAll(){ renderTheme(); renderCount(); renderStatus(); renderBlock(
 
 /* ===================== Interacción ===================== */
 function setBpm(v){ S.bpm = Math.max(30, Math.min(260, Math.round(v))); save(); renderTransport(); }
+document.addEventListener('fullscreenchange', ()=>{ document.documentElement.classList.toggle('is-fs', !!document.fullscreenElement); });
 function toggleFs(){
   if(document.fullscreenElement) document.exitFullscreen();
   else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});

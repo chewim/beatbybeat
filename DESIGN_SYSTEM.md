@@ -32,7 +32,7 @@ La luminosidad marca lo activo; el color marca la dirección del error. Nada dep
 Pendiente: los bordes de `--db-line` no llegan a 3:1. Hoy los controles se identifican por su texto o icono; si un control dependiera solo del borde, hay que subirlo.
 
 ## Tipografía
-Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más dos de exhibición: `--db-fs-count` (la cuenta, se ajusta a los tiempos del compás) y `--db-fs-counter` (el número de compás, muy visible a distancia). No añadir tamaños sin quitar otro.
+Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más `--db-fs-counter` (el número de compás, muy visible a distancia). La cuenta no tiene token: `fitCount()` le da el mayor tamaño que cabe en el escenario, porque se baila mirando desde lejos. En pantalla completa se oculta la fila de tempo para que crezca más. No añadir tamaños sin quitar otro.
 
 ## Forma
 - `--db-radius-ctl`: todos los botones, segmentados y campos. Mismo radio siempre.
