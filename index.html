@@ -7,20 +7,22 @@
 <style>
 /* Tokens: fuente de verdad del sistema (ver DESIGN_SYSTEM.md). Nada fuera de aquí lleva valores sueltos. */
 :root{
-  /* Tema por defecto: Escenario (tungsteno sobre azul de escena) */
-  --db-bg:#0E1126; --db-surface:#161A35; --db-surface-2:#1B1F3D; --db-line:#262B4E;
-  --db-text:#E9ECF8; --db-text-2:#9AA0C0; --db-text-3:#6A7099; --db-text-4:#3E4366;
+  /* Tema por defecto: Escenario (tungsteno sobre negro de escena, grafito con brillo metálico) */
+  --db-bg:#0A0A0B; --db-surface:#131315; --db-surface-2:#1A1A1D; --db-line:#232327;
+  --db-text:#EDEDEF; --db-text-2:#A1A1A8; --db-text-3:#6E6E76; --db-text-4:#2E2E33;
   --db-accent:#FFE2A8; --db-on-accent:#1A1406; --db-beat-on:#FFE2A8;
-  --db-early:#7FA8FF; --db-late:#FFB36B; --db-scrim:#05060F;
+  --db-early:#7FA8FF; --db-late:#FFB36B; --db-scrim:#000000;
   --db-glow:0 0 .35em color-mix(in srgb, var(--db-beat-on) 35%, transparent);
   /* Luz y profundidad: fondo con foco de escenario, bordes de control a 3:1, canto de luz arriba y sombra abajo */
-  --db-bg-deep:#080A1A; --db-line-strong:#5F67A3; --db-light:#FFFFFF; --db-dark:#000000;
+  --db-bg-deep:#030304; --db-line-strong:#63636B; --db-light:#FFFFFF; --db-dark:#000000;
   --db-edge:inset 0 1px 0 color-mix(in srgb, var(--db-light) 9%, transparent);
   --db-drop:0 2px 8px -2px color-mix(in srgb, var(--db-dark) 55%, transparent);
   --db-well:inset 0 2px 6px color-mix(in srgb, var(--db-dark) 45%, transparent);
   --db-grad-ctl:linear-gradient(180deg, color-mix(in srgb, var(--db-surface-2) 82%, var(--db-text)) 0%, var(--db-surface) 100%);
   --db-grad-surface:linear-gradient(180deg, color-mix(in srgb, var(--db-surface) 92%, var(--db-text)) 0%, var(--db-surface) 60%);
-  --db-backdrop:radial-gradient(ellipse 70% 55% at 50% -12%, color-mix(in srgb, var(--db-accent) 9%, transparent) 0%, transparent 70%), linear-gradient(180deg, var(--db-bg) 0%, var(--db-bg-deep) 100%);
+  --db-backdrop:radial-gradient(ellipse 45% 60% at 50% -10%, color-mix(in srgb, var(--db-light) 7%, transparent) 0%, transparent 70%), radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--db-accent) 4%, transparent) 0%, transparent 75%), linear-gradient(180deg, var(--db-bg) 0%, var(--db-bg-deep) 100%);
+  --db-metal:linear-gradient(180deg, var(--db-text-2) 0%, var(--db-text-3) 100%);
+  --db-metal-on:linear-gradient(180deg, var(--db-light) 0%, var(--db-beat-on) 70%);
   --db-halo:0 0 22px -4px color-mix(in srgb, var(--db-accent) 50%, transparent);
 
   --db-radius-ctl:12px; --db-radius-cell:8px; --db-radius-card:16px; --db-radius-switch:16px; --db-radius-mark:2px;
@@ -29,7 +31,7 @@
   --db-fs-counter:clamp(56px, 8vw, 104px);
 
   --db-s-1:4px; --db-s-2:8px; --db-s-3:12px; --db-s-4:16px; --db-s-5:24px; --db-s-6:32px;
-  --db-ctl:44px; --db-play:64px;
+  --db-ctl:44px; --db-play:56px;
   --db-font:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 [data-theme=estudio]{
@@ -47,6 +49,8 @@
   --db-grad-surface:linear-gradient(180deg, var(--db-light) 0%, color-mix(in srgb, var(--db-bg) 40%, var(--db-light)) 100%);
   --db-backdrop:radial-gradient(ellipse 70% 55% at 50% -12%, color-mix(in srgb, var(--db-accent) 7%, transparent) 0%, transparent 70%), linear-gradient(180deg, var(--db-bg) 0%, var(--db-bg-deep) 100%);
   --db-halo:0 0 18px -4px color-mix(in srgb, var(--db-accent) 40%, transparent);
+  --db-metal:linear-gradient(180deg, var(--db-text-3) 0%, color-mix(in srgb, var(--db-text-3) 70%, var(--db-text-4)) 100%);
+  --db-metal-on:linear-gradient(180deg, var(--db-text) 0%, var(--db-text) 100%);
 }
 
 *{box-sizing:border-box;min-width:0}
@@ -132,7 +136,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .mini{display:flex;align-items:center;justify-content:space-between;gap:var(--db-s-3)}
 .mini .stepper output{min-width:2.6em}
 .transport{display:flex;flex-direction:column;gap:var(--db-s-2);align-items:stretch}
-.transport .btn--icon{width:var(--db-play)}
+.transport .btn--icon{width:var(--db-play);height:var(--db-play)}
 
 /* Tempo */
 .bpm{font-size:var(--db-fs-5);font-weight:700;min-width:2.2em;text-align:center}
@@ -198,6 +202,12 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
    Referencias: dark mode de producto tipo Linear/Raycast (bordes finos, canto de luz arriba, foco radial), adaptado a
    la paleta de escenario. Nada chillón: la luz sale del acento a baja opacidad y de bordes más claros. */
 body{background:var(--db-backdrop);background-attachment:fixed}
+/* Números con brillo metálico (grafito), el activo con luz de tungsteno */
+.beat__n{background:var(--db-metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.beat__n.is-on{background-image:var(--db-metal-on);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 .12em color-mix(in srgb, var(--db-beat-on) 45%, transparent))}
+.count.is-idle .beat__n{background-image:var(--db-metal)}
+.count.is-silent .beat__n{background-image:none;color:var(--db-text-4);filter:none}
+.count.is-ci .beat__n.is-on{background-image:linear-gradient(180deg, var(--db-light), var(--db-text));filter:none}
 .btn,.summary{background:var(--db-grad-ctl);border-color:var(--db-line-strong);box-shadow:var(--db-edge), var(--db-drop);transition:border-color .15s, box-shadow .15s, color .15s}
 .btn:hover,.summary:hover{border-color:var(--db-text-2);box-shadow:var(--db-edge), var(--db-drop), 0 0 16px -6px color-mix(in srgb, var(--db-text) 30%, transparent)}
 .btn--on,.stop-toggle[aria-pressed=true]{border-color:var(--db-accent);background:linear-gradient(180deg, color-mix(in srgb, var(--db-accent) 14%, var(--db-surface-2)) 0%, var(--db-surface) 100%);box-shadow:var(--db-edge), var(--db-halo)}

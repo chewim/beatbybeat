@@ -18,3 +18,4 @@
 - 2026-11-25 · El stop time pasa a un botón en la fila del tempo (slider más corto) y su configuración aparece debajo solo en pausa. Patrones más grandes en fila con scroll horizontal. · Por qué: petición de David para ganar espacio.
 - 2026-11-25 · Capa de luz y profundidad: foco radial de escenario, degradados oscuros sutiles, canto de luz y bordes de control más claros (3:1), halo del acento solo en lo activo. · Descartado: colores más saturados. · Por qué: petición de David, menos plano sin colores chillones; de paso cierra la deuda de contraste de bordes.
 - 2026-11-25 · Compás y bloque salen de ajustes y van junto al play como steppers. · Por qué: más intuitivo que esconderlos (David).
+- 2026-11-25 · Escenario pasa de azul a negro opaco con grafito y números metálicos; play y reiniciar del mismo tamaño. · Por qué: referencia de David (negro elegante con brillo metálico); el play ya destaca por color.

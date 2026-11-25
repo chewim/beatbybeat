@@ -6,7 +6,7 @@ Los valores viven en `index.html` (`:root` y `[data-theme=estudio]`). Este docum
 La luminosidad marca lo activo; el color marca la dirección del error. Nada depende solo del tono, para que funcione con daltonismo y en una tele lejana o mal calibrada.
 
 ## Temas
-- **Escenario** (por defecto, oscuro): luz de tungsteno sobre azul de escena. Para clases, tele y salas en penumbra.
+- **Escenario** (por defecto, oscuro): luz de tungsteno sobre negro de escena. Negro opaco con grafito y brillo metálico (números con degradado `--db-metal`; el activo con `--db-metal-on`). Para clases, tele y salas en penumbra.
 - **Estudio** (claro): para salas con mucha luz y espejos, donde una pantalla oscura refleja todo, y para personas a las que el texto claro sobre oscuro les deja halos (astigmatismo).
 - Descartado: verde ácido (acento "prefabricado", muy saturado y fatigoso tras una hora de clase) y una paleta tipo marcador deportivo ámbar (demasiado parecida a cualquier app de fitness).
 
@@ -20,16 +20,16 @@ La luminosidad marca lo activo; el color marca la dirección del error. Nada dep
 ### Contraste comprobado (WCAG 2)
 | Par | Escenario | Estudio |
 |---|---|---|
-| Texto / fondo | 15,8 | 16,6 |
-| Texto secundario / fondo | 7,2 | 6,0 |
+| Texto / fondo | 16,9 | 16,6 |
+| Texto secundario / fondo | 7,7 | 6,0 |
 | Número inactivo / fondo | 3,9 | 3,6 |
-| Tiempo activo / número inactivo | 3,8 | 4,6 |
-| Acento / fondo | 14,8 | 6,2 |
+| Tiempo activo / número inactivo | 4,0 | 4,6 |
+| Acento / fondo | 15,7 | 6,2 |
 | Texto sobre acento | 14,6 | 7,0 |
-| Antes / superficie | 7,3 | 7,0 |
-| Después / superficie | 9,7 | 5,2 |
+| Antes / superficie | 7,9 | 7,0 |
+| Después / superficie | 10,5 | 5,2 |
 
-| Borde de control (`--db-line-strong`) / fondo | 3,5 | 3,2 |
+| Borde de control (`--db-line-strong`) / fondo | 3,3 | 3,2 |
 
 Los bordes de control ya cumplen 3:1 (WCAG 1.4.11). `--db-line` queda solo para separadores, que no lo necesitan.
 
@@ -57,7 +57,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 
 ## Componentes
 - `.btn` (+ `--icon`, `--on`): todos los botones salvo play. 44 px de objetivo mínimo.
-- `.play`: transporte; cuadrado, con reiniciar debajo.
+- `.play`: transporte; cuadrado y del mismo tamaño que reiniciar (`--db-play`). Lo distingue solo el color de CTA primario.
 - `.meter-ctl` + `.mini`: compás (tiempos) y bloque (4/8/16/32) junto al play, con steppers; ya no están en ajustes.
 - `.seg`: elección exclusiva de 2-4 opciones.
 - `.seg--grid`: la misma elección en rejilla (acentos por tiempo). Con `.pat`, los patrones de stop time: nombre, compases (4+4) y una miniatura de puntos llenos (suenan) y huecos (silencio).
