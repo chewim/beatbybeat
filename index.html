@@ -99,14 +99,16 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 
 /* Bloque */
 .block{flex:1;display:flex;flex-direction:column;gap:var(--db-s-2)}
-.cells{display:grid;grid-template-columns:repeat(var(--c,8),minmax(0,1fr));gap:var(--db-s-2);max-width:640px}
-.cell{height:40px;border-radius:var(--db-radius-cell);background:var(--db-surface-2);color:var(--db-text-3);display:grid;place-items:center;font-size:var(--db-fs-2);font-weight:600}
+/* Las celdas llenan el ancho disponible: más grandes con pocos compases, más pequeñas con muchos */
+.cells{display:grid;grid-template-columns:repeat(var(--c,8),minmax(0,1fr));gap:var(--db-s-2)}
+.cell{height:clamp(32px, 3.6vw, 56px);border-radius:var(--db-radius-cell);background:var(--db-surface-2);color:var(--db-text-3);display:grid;place-items:center;font-size:var(--db-fs-2);font-weight:600}
+.cells--big .cell{height:clamp(40px, 6vw, 96px);font-size:var(--db-fs-4)}
 .cell--sil{background:transparent;box-shadow:inset 0 0 0 1.5px var(--db-line);color:var(--db-text-4)}
 .cell--done{background:color-mix(in srgb, var(--db-accent) 80%, var(--db-bg));color:var(--db-on-accent)}
 .cell--sil.cell--done{background:transparent;box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--db-accent) 60%, transparent);color:var(--db-accent)}
 .cell--now{background:var(--db-accent);color:var(--db-on-accent);transform:scale(1.06)}
 .cells--dense{gap:var(--db-s-1)}
-.cells--dense .cell{height:24px;font-size:var(--db-fs-1)}
+.cells--dense .cell{height:clamp(24px, 2.6vw, 44px);font-size:var(--db-fs-1)}
 .transport{display:flex;gap:var(--db-s-3);align-items:center}
 
 /* Tempo */
@@ -600,7 +602,7 @@ function renderStatus(ev){
 }
 function renderBlock(){
   const n = S.block, wrap = $('cells');
-  wrap.style.setProperty('--c', Math.min(n,16)); wrap.classList.toggle('cells--dense', n>16);
+  wrap.style.setProperty('--c', Math.min(n,16)); wrap.classList.toggle('cells--dense', n>16); wrap.classList.toggle('cells--big', n<=8);
   $('blockLbl').textContent = `Bloque · ${n} compases`;
   const active = R.playing && R.shownBar!=null && R.shownBar>=0;
   const bar = active ? R.shownBar : -1;
