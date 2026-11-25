@@ -53,7 +53,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.status--warn`: aviso con cuenta atrás antes del silencio, en acento.
 - `.switch`: activar/desactivar una opción.
 - `.stepper`: valores numéricos con límite.
-- `.cell` (+ `--sil`, `--done`, `--now`): compases del bloque. Los de silencio van huecos. Llenan todo el ancho disponible; su alto depende del ancho de pantalla y del número de compases (`.cells--big` hasta 8, normal 16, `.cells--dense` 32 en dos filas).
+- `.cell` (+ `--sil`, `--done`, `--now`): compases del bloque. Los de silencio siguen la misma progresión (pendiente → actual → hecho) pero translúcidos, para distinguirlos y seguirlos con la vista. Llenan todo el ancho disponible; su alto depende del ancho de pantalla y del número de compases (`.cells--big` hasta 8, normal 16, `.cells--dense` 32 en dos filas).
 - `.counter`: el número de compás. En silencio se congela en gris.
 - `.sweep`: barra de tiempo bajo la cuenta. Avanza del 1 al 1 siguiente a velocidad constante, con una marca bajo cada número. En silencio es la guía: gana intensidad (grosor, calor y brillo vía `--heat`) hasta que vuelve el sonido.
 
