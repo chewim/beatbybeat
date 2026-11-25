@@ -29,7 +29,7 @@ La luminosidad marca lo activo; el color marca la dirección del error. Nada dep
 | Antes / superficie | 7,3 | 7,0 |
 | Después / superficie | 9,7 | 5,2 |
 
-| Borde de control (`--db-line-strong`) / fondo | 3,5 | 3,3 |
+| Borde de control (`--db-line-strong`) / fondo | 3,5 | 3,2 |
 
 Los bordes de control ya cumplen 3:1 (WCAG 1.4.11). `--db-line` queda solo para separadores, que no lo necesitan.
 
