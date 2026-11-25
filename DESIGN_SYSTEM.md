@@ -48,6 +48,8 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.btn` (+ `--icon`, `--on`): todos los botones salvo play. 44 px de objetivo mínimo.
 - `.play`: transporte.
 - `.seg`: elección exclusiva de 2-4 opciones.
+- `.seg--grid`: la misma elección en rejilla (patrones de stop time, acentos por tiempo).
+- `.status--warn`: aviso con cuenta atrás antes del silencio, en acento.
 - `.switch`: activar/desactivar una opción.
 - `.stepper`: valores numéricos con límite.
 - `.cell` (+ `--sil`, `--done`, `--now`): compases del bloque. Los de silencio van huecos.

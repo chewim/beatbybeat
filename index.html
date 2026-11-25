@@ -130,6 +130,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 .seg{display:flex;gap:var(--db-s-1);padding:var(--db-s-1);border-radius:var(--db-radius-ctl);background:var(--db-bg)}
 .seg button{flex:1;height:40px;border-radius:var(--db-radius-cell);font-size:var(--db-fs-2);color:var(--db-text-2)}
 .seg button[aria-pressed=true]{background:var(--db-text);color:var(--db-bg);font-weight:600}
+.seg--grid{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr))}
+.status--warn{color:var(--db-accent);font-weight:600}
 .stepper{display:flex;align-items:center;gap:var(--db-s-2)}
 .stepper output{min-width:3.2em;text-align:center;font-size:var(--db-fs-4);font-weight:600}
 .switch{width:52px;height:32px;border-radius:var(--db-radius-switch);background:var(--db-surface-2);position:relative;flex:none}
@@ -247,13 +249,23 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
   </div>
 
   <div class="field">
-    <div class="field__h"><h3 class="h">Silencio</h3><button class="switch" id="swStop" aria-label="Activar silencio"></button></div>
+    <div class="field__h"><h3 class="h">Stop time</h3><button class="switch" id="swStop" aria-label="Activar stop time"></button></div>
     <p class="hint">El metrónomo calla y el tiempo lo llevas tú. La pantalla también se apaga.</p>
+    <div class="field" id="stopPatterns">
+      <span class="lbl">Patrón</span>
+      <div class="seg seg--grid" id="segPattern"></div>
+      <p class="hint" id="patternCopy"></p>
+    </div>
     <div class="pair" id="stopBody">
       <div class="field"><span class="lbl">Suenan</span>
         <div class="stepper"><button class="btn btn--icon" data-k="sound" data-d="-1" aria-label="Menos compases sonando">−</button><output class="num" id="oSound"></output><button class="btn btn--icon" data-k="sound" data-d="1" aria-label="Más compases sonando">+</button></div></div>
       <div class="field"><span class="lbl">Callan</span>
         <div class="stepper"><button class="btn btn--icon" data-k="silent" data-d="-1" aria-label="Menos compases en silencio">−</button><output class="num" id="oSilent"></output><button class="btn btn--icon" data-k="silent" data-d="1" aria-label="Más compases en silencio">+</button></div></div>
+    </div>
+    <div class="field" id="stopAnchors">
+      <span class="lbl">Acento en el silencio</span>
+      <div class="seg seg--grid" id="segAnchors"></div>
+      <p class="hint" id="anchorCopy"></p>
     </div>
   </div>
 
@@ -286,10 +298,10 @@ kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);borde
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, input:'touch', sens:50, rt:null, theme:'escenario' };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, input:'touch', sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
-            frozenPos:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
+            frozenPos:0, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
 let ctx = null;
 const ON_TIME_MS = 15;
 
@@ -297,6 +309,21 @@ function load(){ try{ return JSON.parse(localStorage.getItem('dabeat')||'{}'); }
 function save(){ try{ localStorage.setItem('dabeat', JSON.stringify(S)); }catch(e){} }
 const $ = id => document.getElementById(id);
 const FEEL = { straight:'Corcheas', swing:'Swing', triplet:'Tresillos' };
+/* Patrones de stop time (de Inner Time) */
+const PATTERNS = {
+  ones:  { name:'Ones',    sound:1,  silent:1,  copy:'Uno y uno: el tiempo interno al descubierto cada compás.' },
+  twos:  { name:'Twos',    sound:2,  silent:2,  copy:'Dos compases suena, dos llevas tú.' },
+  fours: { name:'Fours',   sound:4,  silent:4,  copy:'Cuatro compases suena, cuatro llevas tú.' },
+  eights:{ name:'Eights',  sound:8,  silent:8,  copy:'Frases largas por ambos lados.' },
+  break1:{ name:'Break 1', sound:7,  silent:1,  copy:'Break corto: siete compases y uno al vacío.' },
+  break2:{ name:'Break 2', sound:6,  silent:2,  copy:'Break de dos: seis compases y dos al vacío.' },
+  break4:{ name:'Break 4', sound:12, silent:4,  copy:'Break largo: doce compases y cuatro al vacío.' },
+  reto:  { name:'Reto',    sound:2,  silent:6,  copy:'Dos compases de referencia y seis a ciegas.' },
+  solo:  { name:'Solo',    sound:4,  silent:12, copy:'Cuatro de entrada y doce compases tuyos.' }
+};
+const patternKey = () => Object.keys(PATTERNS).find(k=>PATTERNS[k].sound===S.sound && PATTERNS[k].silent===S.silent) || null;
+function fitAnchors(){ S.anchors = Array.from({length:S.beats}, (_,i)=>!!S.anchors[i]); }
+fitAnchors();
 
 /* ===================== Audio ===================== */
 function audio(){
@@ -329,7 +356,9 @@ function subOffset(k){
   if(S.feel==='swing') return k ? .66 : 0;
   return k/2;
 }
-function isSilent(bar){ return S.stopOn && bar>=0 && (bar % (S.sound+S.silent)) >= S.sound; }
+/* El ciclo de stop time empieza en R.stopAnchor: activarlo o cambiar el patrón en marcha entra en el siguiente compás, sin reiniciar */
+function cyclePos(bar){ return (bar - R.stopAnchor) % (S.sound+S.silent); }
+function isSilent(bar){ return S.stopOn && bar>=R.stopAnchor && cyclePos(bar) >= S.sound; }
 
 /* ===================== Secuenciador ===================== */
 function scheduleBeat(){
@@ -339,7 +368,7 @@ function scheduleBeat(){
     const ev = { t, bar:R.bar, beat:R.beat, k, ci, sil };
     R.events.push(ev);
     if(!ci) R.grid.push(ev);
-    if(sil) continue;
+    if(sil){ if(k===0 && S.anchors[R.beat]) click(t, 'beat', .45); continue; }
     if(ci){ if(k===0) click(t, R.beat===0 ? 'acc' : 'beat', .8); continue; }
     click(t, k ? 'sub' : (R.beat===0 ? 'acc' : 'beat'));
   }
@@ -354,7 +383,7 @@ function scheduler(){
 function start(){
   audio();
   if(S.input==='mic') micOn().then(renderMic);
-  Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, frozenPos:0, sectionHits:[] });
+  Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, stopAnchor:0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, frozenPos:0, sectionHits:[] });
   scheduler(); R.timer = setInterval(scheduler, 25);
   renderTransport(); requestAnimationFrame(loop);
 }
@@ -365,6 +394,7 @@ function stop(){
 function toggle(){ R.playing ? stop() : start(); }
 function restart(){ if(R.playing) stop(); start(); }
 function retime(){ if(R.playing){ stop(); start(); } else renderAll(); }
+function reanchor(){ if(R.playing){ R.stopAnchor = Math.max(0, R.bar+1); renderBlock(); renderStatus(); } else renderAll(); }
 
 /* ===================== Bucle visual ===================== */
 function loop(){
@@ -394,6 +424,7 @@ function show(ev){
     if(!ev.sil && !ev.ci) R.frozenPos = ev.bar;
     renderBlock(); renderStatus();
   }
+  if(ev.k===0 && !ev.ci) renderStatus(ev);
 }
 function setCountInLabels(on){
   const c = $('count'); c.dataset.ci = on ? '1' : '0';
@@ -409,7 +440,7 @@ function registerHit(heardT, src){
   let best=null, bd=1e9;
   for(const g of R.grid){ const d = Math.abs(heardT - g.t); if(d<bd){ bd=d; best=g; } }
   if(!best || bd > (60/S.bpm)/spb()/2) return;
-  if(src==='mic' && !best.sil) return; // el micro solo mide en silencio: en sonido oiría el clic
+  if(src==='mic' && (!best.sil || (best.k===0 && S.anchors[best.beat]))) return; // el micro solo mide en silencio y fuera de los acentos: si no, oiría el clic
   const hit = { off: heardT - best.t, sil:best.sil, bar:best.bar };
   R.hits.push(hit); if(R.hits.length>200) R.hits.shift();
   if(best.sil) R.sectionHits.push(hit);
@@ -488,14 +519,21 @@ function renderCount(){
     `<span class="beat"><span class="beat__n">${i+1}</span>${marks.map(m=>`<span class="beat__m">${m}</span>`).join('')}</span>`).join('');
   c.style.setProperty('--u', (S.beats * (S.feel==='triplet' ? 1.5 : 1.12)).toFixed(2));
 }
-function renderStatus(){
+function renderStatus(ev){
   const st = $('status');
+  st.classList.remove('status--warn');
   if(!R.playing){ st.innerHTML = 'Pulsa play. Toca la pantalla o pulsa <b>T</b> en cada golpe para medir tu precisión.'; return; }
   if(R.shownBar==null || R.shownBar<0){ st.textContent = 'Entrada'; return; }
   if(R.shownSilent){ st.innerHTML = '<b>Silencio.</b> Tú llevas el tiempo.'; return; }
-  if(!S.stopOn){ st.textContent = ''; return; }
-  const left = S.sound - R.shownBar % (S.sound+S.silent);
-  st.textContent = left===1 ? 'Último compás antes del silencio' : `Silencio en ${left} compases`;
+  if(!S.stopOn || R.shownBar < R.stopAnchor){ st.textContent = S.stopOn ? 'El silencio entra en el próximo compás' : ''; return; }
+  const left = S.sound - cyclePos(R.shownBar);
+  if(left===1){
+    const beatsLeft = S.beats - (ev ? ev.beat : 0);
+    st.classList.add('status--warn');
+    st.textContent = `Silencio en ${beatsLeft}`;
+    return;
+  }
+  st.textContent = `Silencio en ${left} compases`;
 }
 function renderBlock(){
   const n = S.block, wrap = $('cells');
@@ -524,7 +562,7 @@ function renderTransport(){
   $('bpmR').style.setProperty('--p', ((S.bpm-30)/230)*100+'%');
 }
 function renderSummary(){
-  $('summary').innerHTML = [`<b>${S.beats}/4</b>`, FEEL[S.feel], `Bloque ${S.block}`, S.stopOn ? `Silencio ${S.sound}+${S.silent}` : 'Sin silencio'].join(' · ');
+  $('summary').innerHTML = [`<b>${S.beats}/4</b>`, FEEL[S.feel], `Bloque ${S.block}`, S.stopOn ? (patternKey() ? `Stop time ${PATTERNS[patternKey()].name}` : `Stop time ${S.sound}+${S.silent}`) : 'Sin stop time'].join(' · ');
 }
 function renderStrip(){
   const s = $('strip'), last = R.hits.slice(-16);
@@ -551,7 +589,16 @@ function renderSheet(){
   $('oSound').textContent = S.sound; $('oSilent').textContent = S.silent;
   const press = (id, v) => document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===String(v)));
   press('segFeel', S.feel); press('segBlock', S.block); press('segInput', S.input); press('segTheme', S.theme);
-  $('swStop').setAttribute('aria-pressed', S.stopOn); $('stopBody').hidden = !S.stopOn;
+  $('swStop').setAttribute('aria-pressed', S.stopOn);
+  ['stopBody','stopPatterns','stopAnchors'].forEach(id=>$(id).hidden = !S.stopOn);
+  const pk = patternKey(), pat = $('segPattern');
+  pat.innerHTML = Object.entries(PATTERNS).map(([k,p])=>`<button data-v="${k}" aria-pressed="${k===pk}">${p.name}</button>`).join('');
+  $('patternCopy').textContent = pk ? PATTERNS[pk].copy : `Personalizado: ${S.sound} compases suena, ${S.silent} llevas tú.`;
+  const an = $('segAnchors');
+  an.style.setProperty('--cols', Math.min(S.beats, 6));
+  an.innerHTML = S.anchors.map((on,i)=>`<button data-i="${i}" aria-pressed="${on}" aria-label="Acento en el tiempo ${i+1}">${i+1}</button>`).join('');
+  const on = S.anchors.map((v,i)=>v ? i+1 : 0).filter(Boolean);
+  $('anchorCopy').textContent = !on.length ? 'Nada suena. Silencio real.' : `En el silencio suena ${on.length===1 ? 'el tiempo' : 'los tiempos'} ${on.join(', ')}. Ve quitándolos a medida que ganes precisión.`;
   $('swCi').setAttribute('aria-pressed', S.countIn);
   $('micBody').hidden = S.input!=='mic';
   $('inputHint').textContent = S.input==='mic'
@@ -600,7 +647,10 @@ $('close').onclick = closeSheet; $('scrim').onclick = closeSheet;
 const LIM = { beats:[1,12], sound:[1,16], silent:[1,16] };
 document.querySelectorAll('.stepper button').forEach(b=>b.onclick = ()=>{
   const k = b.dataset.k, [lo,hi] = LIM[k];
-  S[k] = Math.max(lo, Math.min(hi, S[k] + +b.dataset.d)); save(); renderSheet(); renderSummary(); retime();
+  S[k] = Math.max(lo, Math.min(hi, S[k] + +b.dataset.d));
+  if(k==='beats') fitAnchors();
+  save(); renderSheet(); renderSummary();
+  k==='beats' ? retime() : reanchor();
 });
 function seg(id, key, cast, after){
   document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick = ()=>{ S[key] = cast(b.dataset.v); save(); renderSheet(); renderSummary(); after(); });
@@ -609,7 +659,11 @@ seg('segFeel', 'feel', String, retime);
 seg('segBlock', 'block', Number, retime);
 seg('segTheme', 'theme', String, renderTheme);
 seg('segInput', 'input', String, ()=>{ renderPrecLbl(); if(S.input==='mic') micOn().then(renderMic); else micOff(); });
-$('swStop').onclick = ()=>{ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); renderResult(); retime(); };
+$('swStop').onclick = ()=>{ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); renderResult(); reanchor(); };
+$('segPattern').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
+  const p = PATTERNS[b.dataset.v]; S.sound = p.sound; S.silent = p.silent; save(); renderSheet(); renderSummary(); reanchor(); };
+$('segAnchors').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
+  const i = +b.dataset.i; S.anchors[i] = !S.anchors[i]; save(); renderSheet(); };
 $('swCi').onclick = ()=>{ S.countIn = !S.countIn; save(); renderSheet(); };
 $('sens').oninput = e=>{ S.sens = +e.target.value; save(); renderMic(); };
 $('calib').onclick = calibrate;
