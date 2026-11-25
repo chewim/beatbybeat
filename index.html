@@ -128,6 +128,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .cell--now{background:var(--db-accent);color:var(--db-on-accent);transform:scale(1.06)}
 .cells--dense{gap:var(--db-s-1)}
 .cells--dense .cell{height:clamp(24px, 2.6vw, 44px);font-size:var(--db-fs-1)}
+.meter-ctl{display:flex;flex-direction:column;gap:var(--db-s-2)}
+.mini{display:flex;align-items:center;justify-content:space-between;gap:var(--db-s-3)}
+.mini .stepper output{min-width:2.6em}
 .transport{display:flex;flex-direction:column;gap:var(--db-s-2);align-items:stretch}
 .transport .btn--icon{width:var(--db-play)}
 
@@ -225,6 +228,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   .row{flex-wrap:wrap;gap:var(--db-s-4)}
   .counter{border-right:0;padding-right:0;flex-direction:row;align-items:baseline;gap:var(--db-s-3);flex-basis:100%}
   .block{flex-basis:100%}
+  .meter-ctl{flex-direction:row;flex-wrap:wrap;flex-basis:100%;justify-content:space-between}
   .transport{flex-direction:row;flex-basis:100%}
   .transport .play{flex:1;width:auto}
   .slider{flex-basis:100%;order:5}
@@ -273,6 +277,12 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
     <div class="block">
       <span class="lbl" id="blockLbl"></span>
       <div class="cells" id="cells"></div>
+    </div>
+    <div class="meter-ctl">
+      <div class="mini"><span class="lbl">Compás</span>
+        <div class="stepper"><button class="btn btn--icon" data-k="beats" data-d="-1" aria-label="Menos tiempos por compás">−</button><output class="num" id="oBeats"></output><button class="btn btn--icon" data-k="beats" data-d="1" aria-label="Más tiempos por compás">+</button></div></div>
+      <div class="mini"><span class="lbl">Bloque</span>
+        <div class="stepper"><button class="btn btn--icon" id="blkDown" aria-label="Bloque más corto">−</button><output class="num" id="oBlock"></output><button class="btn btn--icon" id="blkUp" aria-label="Bloque más largo">+</button></div></div>
     </div>
     <div class="transport">
       <button class="play" id="play" aria-label="Reproducir">
@@ -331,21 +341,8 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   </div>
 
   <div class="field">
-    <div class="field__h"><h3 class="h">Compás</h3>
-      <div class="stepper"><button class="btn btn--icon" data-k="beats" data-d="-1" aria-label="Menos tiempos">−</button><output class="num" id="oBeats"></output><button class="btn btn--icon" data-k="beats" data-d="1" aria-label="Más tiempos">+</button></div>
-    </div>
-    <p class="hint">Tiempos por compás. El 1 lleva acento.</p>
-  </div>
-
-  <div class="field">
     <h3 class="h">Subdivisión</h3>
     <div class="seg" id="segFeel"><button data-v="straight">Corcheas</button><button data-v="swing">Swing</button><button data-v="triplet">Tresillos</button></div>
-  </div>
-
-  <div class="field">
-    <h3 class="h">Bloque</h3>
-    <div class="seg" id="segBlock"><button data-v="4">4</button><button data-v="8">8</button><button data-v="16">16</button><button data-v="32">32</button></div>
-    <p class="hint">Compases por frase.</p>
   </div>
 
   <div class="field">
@@ -702,7 +699,7 @@ function renderSheet(){
   $('oBeats').textContent = `${S.beats}/4`;
   $('oSound').textContent = S.sound; $('oSilent').textContent = S.silent;
   const press = (id, v) => document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===String(v)));
-  press('segFeel', S.feel); press('segBlock', S.block); press('segTheme', S.theme);
+  press('segFeel', S.feel); $('oBlock').textContent = S.block; press('segTheme', S.theme);
   $('stopAdd').setAttribute('aria-pressed', S.stopOn);
   $('stopAdd').setAttribute('aria-label', S.stopOn ? 'Quitar stop time' : 'Añadir stop time');
   $('stopCard').hidden = !S.stopOn;
@@ -773,7 +770,7 @@ $('gear').onclick = openSheet; $('summary').onclick = openSheet;
 $('close').onclick = closeSheet; $('scrim').onclick = closeSheet;
 
 const LIM = { beats:[1,12], sound:[1,16], silent:[1,16] };
-document.querySelectorAll('.stepper button').forEach(b=>b.onclick = ()=>{
+document.querySelectorAll('.stepper button[data-k]').forEach(b=>b.onclick = ()=>{
   const k = b.dataset.k, [lo,hi] = LIM[k];
   S[k] = Math.max(lo, Math.min(hi, S[k] + +b.dataset.d));
   if(k==='beats') fitAnchors();
@@ -785,7 +782,10 @@ function seg(id, key, cast, after){
   document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick = ()=>{ S[key] = cast(b.dataset.v); save(); renderSheet(); renderSummary(); after(); });
 }
 seg('segFeel', 'feel', String, retime);
-seg('segBlock', 'block', Number, retime);
+const BLOCKS = [4, 8, 16, 32];
+function stepBlock(d){ const i = Math.max(0, Math.min(BLOCKS.length-1, BLOCKS.indexOf(S.block) + d)); S.block = BLOCKS[i]; save(); renderSheet(); renderSummary(); renderBlock(); }
+$('blkDown').onclick = ()=>stepBlock(-1);
+$('blkUp').onclick = ()=>stepBlock(1);
 seg('segTheme', 'theme', String, renderTheme);
 $('swMic').onclick = ()=>{ S.mic = !S.mic; save(); renderSheet(); S.mic ? micOn().then(renderMic) : micOff(); };
 function toggleStop(){ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); renderStopBtn(); reanchor(); }

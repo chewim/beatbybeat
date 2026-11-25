@@ -58,6 +58,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 ## Componentes
 - `.btn` (+ `--icon`, `--on`): todos los botones salvo play. 44 px de objetivo mínimo.
 - `.play`: transporte; cuadrado, con reiniciar debajo.
+- `.meter-ctl` + `.mini`: compás (tiempos) y bloque (4/8/16/32) junto al play, con steppers; ya no están en ajustes.
 - `.seg`: elección exclusiva de 2-4 opciones.
 - `.seg--grid`: la misma elección en rejilla (acentos por tiempo). Con `.pat`, los patrones de stop time: nombre, compases (4+4) y una miniatura de puntos llenos (suenan) y huecos (silencio).
 - `.stop-toggle`: botón de stop time en la fila del tempo, con `+` que gira a × y el patrón activo. Atajo `X`.
