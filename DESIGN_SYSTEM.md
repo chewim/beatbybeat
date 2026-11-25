@@ -49,7 +49,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.play`: transporte.
 - `.seg`: elección exclusiva de 2-4 opciones.
 - `.seg--grid`: la misma elección en rejilla (acentos por tiempo). Con `.pat`, los patrones de stop time: nombre, compases (4+4) y una miniatura de puntos llenos (suenan) y huecos (silencio).
-- `.stop-btn`: interruptor de stop time en la pantalla principal, junto al play; muestra el patrón activo. Atajo `X`.
+- `.stopcard`: el stop time vive en la pantalla principal, bajo el tempo. Plegado muestra título, resumen y un botón `+` (gira a × cuando está activo). Activo muestra patrones, compases que suenan y callan, y acentos. Mientras suena o en pantalla completa se pliega a su resumen para que la cuenta crezca. Atajo `X`.
 - `.status--warn`: aviso con cuenta atrás antes del silencio, en acento.
 - `.switch`: activar/desactivar una opción.
 - `.stepper`: valores numéricos con límite.
