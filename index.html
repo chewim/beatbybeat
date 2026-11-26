@@ -125,6 +125,50 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .intro__dots i.on{background:var(--db-accent);box-shadow:var(--db-halo)}
 .stage.is-intro .count-wrap,.stage.is-intro .status{visibility:hidden}
 
+/* Precisión: botón en la cabecera y panel modal con pasos, cifras y gráfica */
+.prec-btn{display:inline-flex;gap:var(--db-s-2);align-items:center;width:auto}
+.prec-btn__n{min-width:20px;padding:0 var(--db-s-1);border-radius:var(--db-radius-cell);background:var(--db-accent);color:var(--db-on-accent);font-size:var(--db-fs-1);font-weight:700;line-height:20px;text-align:center}
+.modal{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:var(--db-s-4);background:color-mix(in srgb, var(--db-scrim) 65%, transparent)}
+.modal__card{width:min(920px,100%);max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;padding:var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-5);border:1px solid var(--db-line-strong);border-radius:var(--db-radius-card);background:var(--db-grad-surface);box-shadow:var(--db-edge), 0 24px 64px -16px color-mix(in srgb, var(--db-dark) 80%, transparent)}
+.modal__card > *{flex:none}
+.setup summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:var(--db-s-3);padding:var(--db-s-3) var(--db-s-4);border:1px solid var(--db-line);border-radius:var(--db-radius-ctl);background:var(--db-bg);font-size:var(--db-fs-3);font-weight:600}
+.setup summary::-webkit-details-marker{display:none}
+.setup summary::after{content:"Ajustar";font-size:var(--db-fs-2);font-weight:400;color:var(--db-text-2)}
+.setup[open] summary::after{content:"Ocultar"}
+.setup[open] summary{margin-bottom:var(--db-s-3)}
+.modal__top,.modal__foot{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--db-s-4)}
+.modal__foot{align-items:center}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--db-s-3)}
+.step{display:flex;gap:var(--db-s-3);align-items:flex-start;padding:var(--db-s-4);border:1px solid var(--db-line);border-radius:var(--db-radius-ctl);background:var(--db-bg)}
+.step__n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:var(--db-fs-2);font-weight:700;color:var(--db-text-2);box-shadow:inset 0 0 0 1.5px var(--db-line-strong)}
+.step.is-done .step__n{background:var(--db-accent);color:var(--db-on-accent);box-shadow:none}
+.step__body{flex:1;display:flex;flex-direction:column;gap:var(--db-s-2)}
+.step__body b{font-size:var(--db-fs-3)}
+.step.is-off{opacity:.45;pointer-events:none}
+.sensrow{display:flex;align-items:center;gap:var(--db-s-3)}
+.sensrow .meter{flex:1}
+.sensrow__lbls{display:flex;justify-content:space-between}
+.hitdot{flex:none;width:16px;height:16px;border-radius:50%;background:var(--db-surface-2);box-shadow:inset 0 0 0 1.5px var(--db-line-strong);transition:background .25s, box-shadow .25s}
+.hitdot.is-hit{background:var(--db-accent);box-shadow:var(--db-halo);transition:none}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--db-s-3)}
+.stat{padding:var(--db-s-3) var(--db-s-4);border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well);display:flex;flex-direction:column;gap:var(--db-s-1)}
+.stat__v{font-size:var(--db-fs-5);font-weight:700;line-height:1.1}
+.chart{position:relative;height:280px;border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well)}
+.chart svg{position:absolute;inset:0;width:100%;height:100%}
+.c-band{fill:color-mix(in srgb, var(--db-text) 6%, transparent)}
+.c-zero{stroke:var(--db-text-3);stroke-width:1.5}
+.c-grid{stroke:var(--db-line);stroke-width:1}
+.c-lbl{fill:var(--db-text-2);font-size:var(--db-fs-1);font-family:var(--db-font)}
+.c-sil{fill:color-mix(in srgb, var(--db-accent) 5%, transparent)}
+.c-early{fill:var(--db-early)} .c-late{fill:var(--db-late)} .c-on{fill:var(--db-text)}
+.c-trend{fill:none;stroke:var(--db-accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.c-empty{fill:var(--db-text-2);font-size:var(--db-fs-3);font-family:var(--db-font)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--db-s-4);font-size:var(--db-fs-2);color:var(--db-text-2)}
+.legend span{display:inline-flex;align-items:center;gap:var(--db-s-2)}
+.lg{width:10px;height:10px;border-radius:50%}
+.lg--early{background:var(--db-early)} .lg--on{background:var(--db-text)} .lg--late{background:var(--db-late)}
+.lg--trend{width:16px;height:3px;border-radius:var(--db-radius-mark);background:var(--db-accent)}
+
 /* Contador de compases */
 .counter{display:flex;flex-direction:column;gap:var(--db-s-1);padding-right:var(--db-s-5);border-right:1px solid var(--db-line);min-width:7.5ch}
 .counter__n{font-size:var(--db-fs-counter);font-weight:700;line-height:.95;letter-spacing:-.03em;color:var(--db-text)}
@@ -162,9 +206,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 
 
 /* Panel de ajustes */
-.scrim{position:fixed;inset:0;background:color-mix(in srgb, var(--db-scrim) 55%, transparent);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim{position:fixed;inset:0;z-index:19;background:color-mix(in srgb, var(--db-scrim) 55%, transparent);opacity:0;pointer-events:none;transition:opacity .2s}
 .scrim.is-on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);background:var(--db-surface);border-left:1px solid var(--db-line);transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;overscroll-behavior:contain;padding:var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-5)}
+.sheet{position:fixed;top:0;right:0;bottom:0;z-index:20;width:min(400px,100%);background:var(--db-surface);border-left:1px solid var(--db-line);transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;overscroll-behavior:contain;padding:var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-5)}
 .sheet.is-on{transform:none}
 .sheet__top{display:flex;justify-content:space-between;align-items:center}
 .sheet__title{font-size:var(--db-fs-4);margin:0}
@@ -252,6 +296,10 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   .transport{flex-direction:row;flex-basis:100%}
   .transport .play{flex:1;width:auto}
   .slider{flex-basis:100%;order:5}
+  .steps{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .prec-btn span:not(.prec-btn__n){display:none}
+  .modal__card{padding:var(--db-s-4)}
   .stopcard{padding:var(--db-s-4)}
   .stopcard__body{grid-template-columns:minmax(0,1fr)}
   #tapT{margin-left:auto}
@@ -271,6 +319,10 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
     <div class="brand"><b>Dabeat</b><span>Precisión</span></div>
     <button class="summary" id="summary" aria-label="Abrir ajustes del ejercicio"></button>
     <div class="top__r">
+      <button class="btn prec-btn" id="precBtn" aria-label="Abrir precisión">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 15h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 11l4-4 3 3 5-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Precisión</span><span class="prec-btn__n num" id="precBtnN" hidden></span>
+      </button>
       <button class="btn btn--icon" id="gear" aria-label="Ajustes">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 13h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="7" cy="5" r="2" fill="var(--db-surface)" stroke="currentColor" stroke-width="1.7"/><circle cx="11" cy="13" r="2" fill="var(--db-surface)" stroke="currentColor" stroke-width="1.7"/></svg>
       </button>
@@ -375,30 +427,63 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   </div>
 
   <div class="field">
-    <div class="field__h"><h3 class="h">Medir con el micro</h3><button class="switch" id="swMic" aria-label="Medir con el micro"></button></div>
-    <p class="hint">El micro oye tus pies en el silencio y, al volver el sonido, te dice si has llevado bien el tiempo.</p>
-    <div class="field" id="micBody" hidden>
-      <div class="field__h"><span class="lbl">Sensibilidad</span><span class="lbl" id="micState"></span></div>
-      <input type="range" id="sens" min="0" max="100" aria-label="Sensibilidad del micro" />
-      <div class="meter"><i class="meter__lvl" id="lvl"></i><i class="meter__thr" id="thrMark"></i></div>
-      <div class="field__h"><span class="lbl" id="calState"></span><button class="btn" id="calib">Calibrar</button></div>
-      <p class="hint">Calibrar mide el retraso de tu altavoz y tu micro. Sube el volumen y quédate en silencio unos segundos.</p>
-    </div>
-  </div>
-
-  <div class="field">
     <h3 class="h">Tema</h3>
     <div class="seg" id="segTheme"><button data-v="escenario">Escenario</button><button data-v="estudio">Estudio</button></div>
     <p class="hint">Estudio es claro: mejor en salas con mucha luz.</p>
   </div>
 
-  <div class="keys"><kbd>Espacio</kbd> play · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>X</kbd> stop time · <kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</div>
+  <div class="keys"><kbd>Espacio</kbd> play · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>X</kbd> stop time · <kbd>P</kbd> precisión · <kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</div>
 </aside>
+
+<div class="modal" id="prec" hidden role="dialog" aria-modal="true" aria-labelledby="precTitle">
+  <div class="modal__card">
+    <div class="modal__top">
+      <div><h2 class="sheet__title" id="precTitle">Precisión</h2><p class="hint">Cómo caen tus golpes respecto al tiempo. Lo mide el micro escuchando tus pies.</p></div>
+      <button class="btn btn--icon" id="precClose" aria-label="Cerrar precisión"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <details class="setup" id="precSetupWrap" open>
+    <summary id="precSetupSum">Configura el micro</summary>
+    <ol class="steps" id="precSetup">
+      <li class="step" id="stepMic">
+        <span class="step__n">1</span>
+        <div class="step__body"><b>Activa el micro</b><p class="hint">Dabeat escucha tus pies para saber cuándo golpeas. No se graba nada ni sale de tu ordenador.</p><span class="lbl" id="micState"></span></div>
+        <button class="btn" id="micBtn">Activar</button>
+      </li>
+      <li class="step" id="stepSens">
+        <span class="step__n">2</span>
+        <div class="step__body"><b>Ajusta la sensibilidad</b><p class="hint">Da unos golpes con los pies: cada golpe tiene que pasar la línea y encender el punto. El ruido de la sala debe quedarse por debajo.</p>
+          <div class="sensrow"><div class="meter"><i class="meter__lvl" id="lvl"></i><i class="meter__thr" id="thrMark"></i></div><i class="hitdot" id="hitDot" aria-hidden="true"></i></div>
+          <input type="range" id="sens" min="0" max="100" aria-label="Sensibilidad del micro" />
+          <div class="sensrow__lbls"><span class="lbl">Menos sensible</span><span class="lbl">Más sensible</span></div>
+        </div>
+      </li>
+      <li class="step" id="stepCal">
+        <span class="step__n">3</span>
+        <div class="step__body"><b>Calibra el retraso</b><p class="hint">Entre que el altavoz suena y el micro lo oye pasan unos milisegundos. Dabeat los mide con 8 clics y los descuenta de tus golpes. Sube el volumen y quédate quieto y en silencio.</p><span class="lbl" id="calState"></span></div>
+        <button class="btn" id="calib">Calibrar</button>
+      </li>
+      <li class="step step--opt">
+        <span class="step__n">·</span>
+        <div class="step__body"><b>Uso auriculares</b><p class="hint">Con auriculares el micro no oye el clic, así que también mide mientras suena. Sin ellos, solo mide en el silencio del stop time.</p></div>
+        <button class="switch" id="swPhones" aria-label="Uso auriculares"></button>
+      </li>
+    </ol>
+    </details>
+
+    <div class="stats" id="precStats"></div>
+    <div class="chart"><svg id="precSvg" role="img" aria-label="Gráfica de desviación de cada golpe en milisegundos"></svg></div>
+    <div class="legend">
+      <span><i class="lg lg--early"></i>Antes del tiempo</span><span><i class="lg lg--on"></i>A tiempo (±20 ms)</span><span><i class="lg lg--late"></i>Después</span><span><i class="lg lg--trend"></i>Tendencia</span>
+    </div>
+    <div class="modal__foot"><p class="hint" id="precNote"></p><button class="btn" id="precClear">Borrar sesión</button></div>
+  </div>
+</div>
 
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
             barStart:null, centers:[], landing:null, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
@@ -558,10 +643,12 @@ function registerHit(heardT, src){
   let best=null, bd=1e9;
   for(const g of R.grid){ const d = Math.abs(heardT - g.t); if(d<bd){ bd=d; best=g; } }
   if(!best || bd > (60/S.bpm)/spb()/2) return;
-  if(src==='mic' && (!best.sil || (best.k===0 && S.anchors[best.beat]))) return; // el micro solo mide en silencio y fuera de los acentos: si no, oiría el clic
+  /* Sin auriculares el micro solo mide en silencio (en sonido oiría el clic); nunca en los acentos del silencio */
+  if(src==='mic' && ((!best.sil && !S.phones) || (best.sil && best.k===0 && S.anchors[best.beat]))) return;
   const hit = { off: heardT - best.t, sil:best.sil, bar:best.bar };
-  R.hits.push(hit); if(R.hits.length>200) R.hits.shift();
+  R.hits.push(hit); if(R.hits.length>500) R.hits.shift();
   if(best.sil) R.sectionHits.push(hit);
+  renderPrecSoon();
 }
 function stats(arr){
   if(!arr.length) return null;
@@ -605,11 +692,12 @@ async function micOn(){
       const d = e.data;
       if(d.lvl!=null){ $('lvl').style.width = Math.min(100, d.lvl*100/.6)+'%'; return; }
       if(R.calib){ R.calib.hits.push(d.t); return; }
+      flashHit();
       registerHit(d.t - rtLat(), 'mic');
     };
     R.mic = { stream, node };
     return true;
-  }catch(err){ $('micState').textContent = 'Sin acceso al micro'; return false; }
+  }catch(err){ R.micError = true; renderPrecSetup(); return false; }
 }
 function micOff(){ if(!R.mic) return; R.mic.stream.getTracks().forEach(t=>t.stop()); R.mic.node.disconnect(); R.mic=null; }
 function rtLat(){ return S.rt ?? ((ctx.outputLatency||ctx.baseLatency||.02) + .03); }
@@ -624,8 +712,8 @@ async function calibrate(){
     const ds=[];
     for(const t of times){ const h = R.calib.hits.find(x=>x>t && x<t+.35); if(h!=null) ds.push(h-t); }
     R.calib=null; $('calib').disabled=false;
-    if(ds.length<5){ $('calState').textContent='No se oyen los clics: sube el volumen o la sensibilidad'; return; }
-    ds.sort((a,b)=>a-b); S.rt = ds[ds.length>>1]; save(); renderMic();
+    if(ds.length<5){ $('calState').textContent='No se han oído los clics. Sube el volumen o la sensibilidad y vuelve a calibrar.'; return; }
+    ds.sort((a,b)=>a-b); S.rt = ds[ds.length>>1]; save(); renderMic(); renderPrecSetup();
   }, (t0 - ctx.currentTime + 4.3)*1000);
 }
 
@@ -781,16 +869,62 @@ function renderSheet(){
     : S.beats===4 && key==='0101' ? '2 y 4: el contratiempo.'
     : `Suenan bajito ${on.join(' y ')}. Ve quitándolos a medida que ganes precisión.`;
   $('swCi').setAttribute('aria-pressed', S.countIn);
-  $('swMic').setAttribute('aria-pressed', S.mic);
-  $('micBody').hidden = !S.mic;
   $('sens').value = S.sens;
   renderMic();
 }
 function renderMic(){
   $('thrMark').style.left = Math.min(100, thrFromSens(S.sens)*100/.6)+'%';
-  $('calState').textContent = S.rt!=null ? `Calibrado · ${Math.round(S.rt*1000)} ms` : 'Sin calibrar';
-  if(R.mic){ $('micState').textContent = 'Escuchando'; R.mic.node.port.postMessage(thrFromSens(S.sens)); }
+  if(R.mic) R.mic.node.port.postMessage(thrFromSens(S.sens));
 }
+
+/* ===================== Panel de precisión ===================== */
+function flashHit(){ const d = $('hitDot'); d.classList.add('is-hit'); clearTimeout(R.hitTO); R.hitTO = setTimeout(()=>d.classList.remove('is-hit'), 120); }
+function renderPrecSetup(){
+  const on = !!R.mic, cal = S.rt!=null;
+  $('stepMic').classList.toggle('is-done', on);
+  $('micBtn').textContent = on ? 'Desactivar' : 'Activar';
+  $('micState').textContent = R.micError ? 'El navegador no ha dado acceso al micro. Revisa el permiso en la barra de direcciones.' : on ? 'Escuchando.' : '';
+  $('stepSens').classList.toggle('is-off', !on);
+  $('stepCal').classList.toggle('is-off', !on);
+  $('stepCal').classList.toggle('is-done', on && cal);
+  $('calState').textContent = cal ? `Retraso medido: ${Math.round(S.rt*1000)} ms. Puedes recalibrar si cambias de altavoz.` : 'Aún sin calibrar: las medidas pueden salir desplazadas.';
+  $('calib').textContent = cal ? 'Recalibrar' : 'Calibrar';
+  $('swPhones').setAttribute('aria-pressed', S.phones);
+  $('precSetupSum').textContent = !on ? 'Configura el micro' : `Micro activo · ${cal ? 'retraso ' + Math.round(S.rt*1000) + ' ms' : 'sin calibrar'}${S.phones ? ' · con auriculares' : ''}`;
+  const n = R.hits.length;
+  $('precBtnN').hidden = !n; $('precBtnN').textContent = n;
+}
+function renderPrecSoon(){ $('precBtnN').hidden = false; $('precBtnN').textContent = R.hits.length; if(!$('prec').hidden && !R.precRaf) R.precRaf = requestAnimationFrame(()=>{ R.precRaf = 0; renderPrec(); }); }
+function renderPrec(){
+  renderPrecSetup();
+  const hits = R.hits, st = stats(hits), ms = hits.map(h=>h.off*1000);
+  const within = ms.length ? Math.round(ms.filter(m=>Math.abs(m)<20).length / ms.length * 100) : null;
+  const tile = (l, v, sub, color) => `<div class="stat"><span class="lbl">${l}</span><span class="stat__v num"${color ? ` style="color:${color}"` : ''}>${v}</span><span class="lbl">${sub}</span></div>`;
+  $('precStats').innerHTML = st
+    ? tile('Media', signed(st.mean), verdict(st.mean), tone(st.mean)) + tile('Constancia', `±${Math.round(st.sd)} ms`, st.sd < 15 ? 'muy regular' : st.sd < 30 ? 'regular' : 'irregular') + tile('A tiempo', `${within} %`, 'golpes dentro de ±20 ms') + tile('Golpes', st.n, S.phones ? 'medidos en toda la sesión' : 'medidos en el silencio')
+    : tile('Media', '—', 'sin datos') + tile('Constancia', '—', 'sin datos') + tile('A tiempo', '—', 'sin datos') + tile('Golpes', '0', 'aún ninguno');
+  $('precNote').textContent = !R.mic ? 'Activa el micro para empezar a medir.' : !S.stopOn && !S.phones ? 'Sin auriculares solo se mide en el silencio: activa el stop time.' : 'Cada punto es un golpe: arriba, tarde; abajo, antes. La línea muestra si te vas desplazando.';
+  drawChart();
+}
+function drawChart(){
+  const svg = $('precSvg'), W = svg.clientWidth, H = svg.clientHeight;
+  if(!W) return;
+  const hits = R.hits.slice(-120), L = 52, Rm = 16, T = 16, B = 16, iw = W - L - Rm, ih = H - T - B;
+  if(!hits.length){ svg.innerHTML = `<text class="c-empty" x="${W/2}" y="${H/2}" text-anchor="middle">Aún no hay golpes. Pulsa play y marca los tiempos con los pies.</text>`; return; }
+  const ms = hits.map(h=>h.off*1000), mx = Math.max(60, ...ms.map(Math.abs)), R2 = Math.min(400, Math.ceil(mx/50)*50);
+  const y = v => T + ih/2 - (v / R2) * (ih/2), x = i => L + (hits.length===1 ? iw/2 : i * iw / (hits.length-1));
+  let g = '';
+  hits.forEach((h,i)=>{ if(h.sil){ const w = hits.length===1 ? iw : iw/(hits.length-1); g += `<rect class="c-sil" x="${(x(i)-w/2).toFixed(1)}" y="${T}" width="${w.toFixed(1)}" height="${ih}"/>`; } });
+  g += `<rect class="c-band" x="${L}" y="${y(20)}" width="${iw}" height="${y(-20)-y(20)}"/>`;
+  [R2, R2/2, -R2/2, -R2].forEach(v=>{ g += `<line class="c-grid" x1="${L}" x2="${L+iw}" y1="${y(v)}" y2="${y(v)}"/><text class="c-lbl" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v>0?'+':'−'}${Math.abs(v)}</text>`; });
+  g += `<line class="c-zero" x1="${L}" x2="${L+iw}" y1="${y(0)}" y2="${y(0)}"/><text class="c-lbl" x="${L-8}" y="${y(0)+4}" text-anchor="end">0 ms</text>`;
+  const k = 6, trend = ms.map((_,i)=>{ const a = ms.slice(Math.max(0,i-k+1), i+1); return a.reduce((p,c)=>p+c,0)/a.length; });
+  if(hits.length > 2) g += `<polyline class="c-trend" points="${trend.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>`;
+  hits.forEach((h,i)=>{ const v = ms[i], c = Math.abs(v)<20 ? 'c-on' : v<0 ? 'c-early' : 'c-late'; g += `<circle class="${c}" cx="${x(i).toFixed(1)}" cy="${y(Math.max(-R2, Math.min(R2, v))).toFixed(1)}" r="${h.sil ? 5 : 3.5}"/>`; });
+  svg.innerHTML = g;
+}
+function openPrec(){ $('prec').hidden = false; $('precSetupWrap').open = !(R.mic && S.rt!=null); renderPrec(); }
+function closePrec(){ $('prec').hidden = true; }
 function renderStopBtn(){ requestAnimationFrame(fitCount); }
 function renderTheme(){ document.documentElement.dataset.theme = S.theme; }
 function renderAll(){ renderTheme(); renderCount(); renderStatus(); renderBlock(); renderTransport(); renderSummary(); renderSheet(); renderStopBtn(); }
@@ -841,7 +975,13 @@ function stepBlock(d){ const i = Math.max(0, Math.min(BLOCKS.length-1, BLOCKS.in
 $('blkDown').onclick = ()=>stepBlock(-1);
 $('blkUp').onclick = ()=>stepBlock(1);
 seg('segTheme', 'theme', String, renderTheme);
-$('swMic').onclick = ()=>{ S.mic = !S.mic; save(); renderSheet(); S.mic ? micOn().then(renderMic) : micOff(); };
+$('precBtn').onclick = openPrec;
+$('precClose').onclick = closePrec;
+$('prec').addEventListener('click', e=>{ if(e.target.id==='prec') closePrec(); });
+$('micBtn').onclick = async ()=>{ if(R.mic){ micOff(); S.mic = false; } else { R.micError = false; S.mic = await micOn(); renderMic(); } save(); renderPrec(); };
+$('swPhones').onclick = ()=>{ S.phones = !S.phones; save(); renderPrec(); };
+$('precClear').onclick = ()=>{ R.hits = []; R.sectionHits = []; R.landing = null; renderPrec(); };
+new ResizeObserver(()=>{ if(!$('prec').hidden) drawChart(); }).observe(document.querySelector('.chart'));
 function toggleStop(){ S.stopOn = !S.stopOn; save(); renderSheet(); renderSummary(); renderStopBtn(); reanchor(); }
 $('stopAdd').onclick = toggleStop;
 $('segPattern').onclick = e=>{ const b = e.target.closest('button'); if(!b) return;
@@ -861,12 +1001,13 @@ document.addEventListener('keydown', e=>{
   else if(k==='s') $('sheet').classList.contains('is-on') ? closeSheet() : openSheet();
   else if(k==='f') toggleFs();
   else if(k==='x') toggleStop();
-  else if(e.key==='Escape') closeSheet();
+  else if(k==='p') $('prec').hidden ? openPrec() : closePrec();
+  else if(e.key==='Escape'){ closeSheet(); closePrec(); }
 });
 
 renderAll();
 requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('is-loading')));
-if(S.mic) $('micState').textContent = 'Pulsa play o Calibrar para activar';
+renderPrecSetup();
 }
 </script>
 </body>
