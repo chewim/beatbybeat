@@ -439,6 +439,16 @@ function click(t, kind, vol=1){
   g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+.001); g.gain.exponentialRampToValueAtTime(.0001,t+.045);
   o.connect(lp).connect(g).connect(ctx.destination); o.start(t); o.stop(t+.06);
 }
+/* Mantiene viva la salida de audio durante el silencio del stop time. Altavoces y auriculares Bluetooth se duermen con el
+   silencio digital y se comen el primer golpe al volver (se oiría primero el "&"). Una señal grave a -68 dB lo evita y no se oye. */
+function keepAlive(on){
+  if(on && !R.keep){
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 22; g.gain.value = .0004;
+    o.connect(g).connect(ctx.destination); o.start();
+    R.keep = o;
+  } else if(!on && R.keep){ R.keep.stop(); R.keep.disconnect(); R.keep = null; }
+}
 /* Tiempo "audible" en reloj del contexto: descuenta la latencia de salida */
 function heardNow(perfMs){
   const p = perfMs ?? performance.now();
@@ -471,7 +481,9 @@ function scheduleBeat(){
     if(!ci) R.grid.push(ev);
     if(sil){ if(k===0 && S.anchors[R.beat]) click(t, 'beat', .45); continue; }
     if(ci){ if(k===0) click(t, R.beat===0 ? 'acc' : 'beat', .8); continue; }
-    click(t, k ? 'sub' : (R.beat===0 ? 'acc' : 'beat'));
+    /* Vuelta del silencio: el 1 suena un poco más fuerte para que la entrada sea inequívoca */
+    const back = !k && R.beat===0 && isSilent(R.bar-1);
+    click(t, k ? 'sub' : (R.beat===0 ? 'acc' : 'beat'), back ? 1.3 : 1);
   }
   R.nextBeat += bd;
   if(++R.beat >= S.beats){ R.beat=0; R.bar++; }
@@ -485,11 +497,12 @@ function start(){
   audio();
   if(S.mic) micOn().then(renderMic);
   Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, stopAnchor:0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, barStart:null, landing:null, sectionHits:[] });
+  keepAlive(true);
   scheduler(); R.timer = setInterval(scheduler, 25);
   renderTransport(); renderSheet(); requestAnimationFrame(loop);
 }
 function stop(){
-  R.playing=false; clearInterval(R.timer); R.events=[];
+  R.playing=false; clearInterval(R.timer); R.events=[]; keepAlive(false);
   showIntro(null);
   renderTransport(); renderSheet(); renderCount(); renderBlock(); renderStatus(); paintSweep();
 }
