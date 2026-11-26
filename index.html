@@ -128,8 +128,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* Precisión: botón en la cabecera y panel modal con pasos, cifras y gráfica */
 .prec-btn{display:inline-flex;gap:var(--db-s-2);align-items:center;width:auto}
 .prec-btn__n{min-width:20px;padding:0 var(--db-s-1);border-radius:var(--db-radius-cell);background:var(--db-accent);color:var(--db-on-accent);font-size:var(--db-fs-1);font-weight:700;line-height:20px;text-align:center}
-.modal{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:var(--db-s-4);background:color-mix(in srgb, var(--db-scrim) 65%, transparent)}
-.modal__card{width:min(920px,100%);max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;padding:var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-5);border:1px solid var(--db-line-strong);border-radius:var(--db-radius-card);background:var(--db-grad-surface);box-shadow:var(--db-edge), 0 24px 64px -16px color-mix(in srgb, var(--db-dark) 80%, transparent)}
+/* El panel de precisión se abre en el flujo, bajo los números (no es un overlay); al cerrarlo todo vuelve a su sitio */
+.precpanel{display:block}
+.modal__card{width:100%;padding:var(--db-s-5);display:flex;flex-direction:column;gap:var(--db-s-5);border:1px solid var(--db-line-strong);border-radius:var(--db-radius-card);background:var(--db-grad-surface);box-shadow:var(--db-edge), var(--db-drop)}
 .modal__card > *{flex:none}
 .setup summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:var(--db-s-3);padding:var(--db-s-3) var(--db-s-4);border:1px solid var(--db-line);border-radius:var(--db-radius-ctl);background:var(--db-bg);font-size:var(--db-fs-3);font-weight:600}
 .setup summary::-webkit-details-marker{display:none}
@@ -153,7 +154,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--db-s-3)}
 .stat{padding:var(--db-s-3) var(--db-s-4);border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well);display:flex;flex-direction:column;gap:var(--db-s-1)}
 .stat__v{font-size:var(--db-fs-5);font-weight:700;line-height:1.1}
-.chart{position:relative;height:280px;border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well)}
+.chart{position:relative;height:240px;border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well)}
 .chart svg{position:absolute;inset:0;width:100%;height:100%}
 .c-band{fill:color-mix(in srgb, var(--db-text) 6%, transparent)}
 .c-zero{stroke:var(--db-text-3);stroke-width:1.5}
@@ -369,6 +370,51 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
     </div>
     <div class="status" id="status"></div>
   </main>
+  <section class="precpanel" id="prec" hidden aria-labelledby="precTitle">
+    <div class="modal__card">
+      <div class="modal__top">
+        <div><h2 class="sheet__title" id="precTitle">Precisión</h2><p class="hint">Cómo caen tus golpes respecto al tiempo. Lo mide el micro escuchando tus pies.</p></div>
+        <button class="btn btn--icon" id="precClose" aria-label="Cerrar precisión"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      </div>
+
+      <details class="setup" id="precSetupWrap" open>
+      <summary id="precSetupSum">Configura el micro</summary>
+      <ol class="steps" id="precSetup">
+        <li class="step" id="stepMic">
+          <span class="step__n">1</span>
+          <div class="step__body"><b>Activa el micro</b><p class="hint">Dabeat escucha tus pies para saber cuándo golpeas. No se graba nada ni sale de tu ordenador.</p><span class="lbl" id="micState"></span></div>
+          <button class="btn" id="micBtn">Activar</button>
+        </li>
+        <li class="step" id="stepSens">
+          <span class="step__n">2</span>
+          <div class="step__body"><b>Ajusta la sensibilidad</b><p class="hint">Da unos golpes con los pies: cada golpe tiene que pasar la línea y encender el punto. El ruido de la sala debe quedarse por debajo.</p>
+            <div class="sensrow"><div class="meter"><i class="meter__lvl" id="lvl"></i><i class="meter__thr" id="thrMark"></i></div><i class="hitdot" id="hitDot" aria-hidden="true"></i></div>
+            <input type="range" id="sens" min="0" max="100" aria-label="Sensibilidad del micro" />
+            <div class="sensrow__lbls"><span class="lbl">Menos sensible</span><span class="lbl">Más sensible</span></div>
+          </div>
+        </li>
+        <li class="step" id="stepCal">
+          <span class="step__n">3</span>
+          <div class="step__body"><b>Calibra el retraso</b><p class="hint">Entre que el altavoz suena y el micro lo oye pasan unos milisegundos. Dabeat los mide con 8 clics y los descuenta de tus golpes. Sube el volumen y quédate quieto y en silencio.</p><span class="lbl" id="calState"></span></div>
+          <button class="btn" id="calib">Calibrar</button>
+        </li>
+        <li class="step step--opt">
+          <span class="step__n">·</span>
+          <div class="step__body"><b>Uso auriculares</b><p class="hint">Con auriculares el micro no oye el clic, así que también mide mientras suena. Sin ellos, solo mide en el silencio del stop time.</p></div>
+          <button class="switch" id="swPhones" aria-label="Uso auriculares"></button>
+        </li>
+      </ol>
+      </details>
+
+      <div class="score" id="precScore"></div>
+      <div class="stats" id="precStats"></div>
+      <div class="chart"><svg id="precSvg" role="img" aria-label="Gráfica de desviación de cada golpe en milisegundos"></svg></div>
+      <div class="legend">
+        <span><i class="lg lg--early"></i>Antes del tiempo</span><span><i class="lg lg--on"></i>A tiempo (±20 ms)</span><span><i class="lg lg--late"></i>Después</span><span><i class="lg lg--trend"></i>Tendencia</span>
+      </div>
+      <div class="modal__foot"><p class="hint" id="precNote"></p><button class="btn" id="precClear">Borrar sesión</button></div>
+    </div>
+  </section>
 
   <section class="row">
     <div class="counter">
@@ -460,51 +506,6 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   <div class="keys"><kbd>Espacio</kbd> play · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>X</kbd> stop time · <kbd>P</kbd> precisión · <kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</div>
 </aside>
 
-<div class="modal" id="prec" hidden role="dialog" aria-modal="true" aria-labelledby="precTitle">
-  <div class="modal__card">
-    <div class="modal__top">
-      <div><h2 class="sheet__title" id="precTitle">Precisión</h2><p class="hint">Cómo caen tus golpes respecto al tiempo. Lo mide el micro escuchando tus pies.</p></div>
-      <button class="btn btn--icon" id="precClose" aria-label="Cerrar precisión"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
-    </div>
-
-    <details class="setup" id="precSetupWrap" open>
-    <summary id="precSetupSum">Configura el micro</summary>
-    <ol class="steps" id="precSetup">
-      <li class="step" id="stepMic">
-        <span class="step__n">1</span>
-        <div class="step__body"><b>Activa el micro</b><p class="hint">Dabeat escucha tus pies para saber cuándo golpeas. No se graba nada ni sale de tu ordenador.</p><span class="lbl" id="micState"></span></div>
-        <button class="btn" id="micBtn">Activar</button>
-      </li>
-      <li class="step" id="stepSens">
-        <span class="step__n">2</span>
-        <div class="step__body"><b>Ajusta la sensibilidad</b><p class="hint">Da unos golpes con los pies: cada golpe tiene que pasar la línea y encender el punto. El ruido de la sala debe quedarse por debajo.</p>
-          <div class="sensrow"><div class="meter"><i class="meter__lvl" id="lvl"></i><i class="meter__thr" id="thrMark"></i></div><i class="hitdot" id="hitDot" aria-hidden="true"></i></div>
-          <input type="range" id="sens" min="0" max="100" aria-label="Sensibilidad del micro" />
-          <div class="sensrow__lbls"><span class="lbl">Menos sensible</span><span class="lbl">Más sensible</span></div>
-        </div>
-      </li>
-      <li class="step" id="stepCal">
-        <span class="step__n">3</span>
-        <div class="step__body"><b>Calibra el retraso</b><p class="hint">Entre que el altavoz suena y el micro lo oye pasan unos milisegundos. Dabeat los mide con 8 clics y los descuenta de tus golpes. Sube el volumen y quédate quieto y en silencio.</p><span class="lbl" id="calState"></span></div>
-        <button class="btn" id="calib">Calibrar</button>
-      </li>
-      <li class="step step--opt">
-        <span class="step__n">·</span>
-        <div class="step__body"><b>Uso auriculares</b><p class="hint">Con auriculares el micro no oye el clic, así que también mide mientras suena. Sin ellos, solo mide en el silencio del stop time.</p></div>
-        <button class="switch" id="swPhones" aria-label="Uso auriculares"></button>
-      </li>
-    </ol>
-    </details>
-
-    <div class="score" id="precScore"></div>
-    <div class="stats" id="precStats"></div>
-    <div class="chart"><svg id="precSvg" role="img" aria-label="Gráfica de desviación de cada golpe en milisegundos"></svg></div>
-    <div class="legend">
-      <span><i class="lg lg--early"></i>Antes del tiempo</span><span><i class="lg lg--on"></i>A tiempo (±20 ms)</span><span><i class="lg lg--late"></i>Después</span><span><i class="lg lg--trend"></i>Tendencia</span>
-    </div>
-    <div class="modal__foot"><p class="hint" id="precNote"></p><button class="btn" id="precClear">Borrar sesión</button></div>
-  </div>
-</div>
 
 <script>
 {
@@ -964,7 +965,7 @@ function drawChart(){
   const svg = $('precSvg'), W = svg.clientWidth, H = svg.clientHeight;
   if(!W) return;
   const hits = R.hits.slice(-120), L = 52, Rm = 16, T = 16, B = 16, iw = W - L - Rm, ih = H - T - B;
-  if(!hits.length){ svg.innerHTML = `<text class="c-empty" x="${W/2}" y="${H/2}" text-anchor="middle">Aún no hay golpes. Pulsa play y marca los tiempos con los pies.</text>`; return; }
+  if(!hits.length){ svg.innerHTML = `<text class="c-empty" x="${W/2}" y="${H/2}" text-anchor="middle">Aún no hay golpes.</text><text class="c-lbl" x="${W/2}" y="${H/2+22}" text-anchor="middle">Pulsa play y marca los tiempos con los pies.</text>`; return; }
   const ms = hits.map(h=>h.off*1000), mx = Math.max(60, ...ms.map(Math.abs)), R2 = Math.min(400, Math.ceil(mx/50)*50);
   const y = v => T + ih/2 - (v / R2) * (ih/2), x = i => L + (hits.length===1 ? iw/2 : i * iw / (hits.length-1));
   let g = '';
@@ -979,8 +980,8 @@ function drawChart(){
   hits.forEach((h,i)=>{ const v = ms[i], c = Math.abs(v)<20 ? 'c-on' : v<0 ? 'c-early' : 'c-late'; g += `<circle class="${c}" cx="${x(i).toFixed(1)}" cy="${y(Math.max(-R2, Math.min(R2, v))).toFixed(1)}" r="${h.sil ? 5 : 3.5}"/>`; });
   svg.innerHTML = g;
 }
-function openPrec(){ $('prec').hidden = false; $('precSetupWrap').open = !(R.mic && S.rt!=null); renderPrec(); }
-function closePrec(){ $('prec').hidden = true; }
+function openPrec(){ $('prec').hidden = false; $('precBtn').classList.add('btn--on'); $('precSetupWrap').open = !(R.mic && S.rt!=null); renderPrec(); requestAnimationFrame(()=>{ fitCount(); $('prec').scrollIntoView({behavior:'smooth', block:'nearest'}); }); }
+function closePrec(){ $('prec').hidden = true; $('precBtn').classList.remove('btn--on'); requestAnimationFrame(fitCount); }
 function renderStopBtn(){ requestAnimationFrame(fitCount); }
 function renderTheme(){ document.documentElement.dataset.theme = S.theme; }
 function renderAll(){ renderTheme(); renderCount(); renderStatus(); renderBlock(); renderTransport(); renderSummary(); renderSheet(); renderStopBtn(); }
@@ -1031,10 +1032,9 @@ function stepBlock(d){ const i = Math.max(0, Math.min(BLOCKS.length-1, BLOCKS.in
 $('blkDown').onclick = ()=>stepBlock(-1);
 $('blkUp').onclick = ()=>stepBlock(1);
 seg('segTheme', 'theme', String, renderTheme);
-$('precBtn').onclick = openPrec;
+$('precBtn').onclick = ()=> $('prec').hidden ? openPrec() : closePrec();
 $('precClose').onclick = closePrec;
 $('prec').addEventListener('click', e=>{ const b = e.target.closest('.info'); if(!b) return; R.open = R.open || {}; R.open[b.dataset.def] = !R.open[b.dataset.def]; renderPrec(); });
-$('prec').addEventListener('click', e=>{ if(e.target.id==='prec') closePrec(); });
 $('micBtn').onclick = async ()=>{ if(R.mic){ micOff(); S.mic = false; } else { R.micError = false; S.mic = await micOn(); renderMic(); } save(); renderPrec(); };
 $('swPhones').onclick = ()=>{ S.phones = !S.phones; save(); renderPrec(); };
 $('precClear').onclick = ()=>{ R.hits = []; R.sectionHits = []; R.landing = null; R.rounds = []; R.marks = []; renderPrec(); };
