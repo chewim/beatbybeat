@@ -100,17 +100,20 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .status b{color:var(--db-text)}
 
 /* Barra de tiempo: avanza bajo los números, también en silencio (la guía para agarrarse) */
-.sweep{position:relative;height:12px;border-radius:var(--db-radius-cell);background:var(--db-surface-2);margin-top:var(--db-s-2)}
-.sweep__fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:var(--db-radius-cell);background:color-mix(in srgb, var(--db-accent) 35%, transparent)}
-.sweep__tick{position:absolute;top:calc(-1 * var(--db-s-1));bottom:calc(-1 * var(--db-s-1));width:2px;transform:translateX(-50%);background:var(--db-text-4)}
-.sweep__tick--one{width:4px;background:var(--db-text-3)}
-.sweep__head{position:absolute;top:50%;left:0;width:24px;height:24px;border-radius:50%;transform:translate(-50%,-50%);background:var(--db-text-2);opacity:0}
+.sweep{position:relative;height:18px;margin-top:var(--db-s-5)}
+/* Un segmento por tiempo, con hueco entre ellos. El arranque de cada tiempo lleva una muesca alta (el 1, la más fuerte) y dentro van las subdivisiones */
+.sweep__seg{position:absolute;top:0;bottom:0;border-radius:var(--db-radius-cell);background:var(--db-surface-2)}
+.sweep__seg::before{content:"";position:absolute;left:0;top:calc(-1 * var(--db-s-3));bottom:calc(-1 * var(--db-s-3));width:4px;border-radius:var(--db-radius-mark);background:var(--db-text-3);transform:translateX(-50%);z-index:2}
+.sweep__seg--one::before{width:8px;top:calc(-1 * var(--db-s-4));bottom:calc(-1 * var(--db-s-4));background:var(--db-text)}
+.sweep__segfill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:var(--db-radius-cell)}
+.sweep__sub{position:absolute;top:18%;bottom:18%;width:3px;transform:translateX(-50%);border-radius:var(--db-radius-mark);background:var(--db-text-3);z-index:1}
+.sweep__seg.is-cur::before{background:var(--db-accent);box-shadow:var(--db-halo)}
+.sweep__head{position:absolute;top:50%;left:0;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);background:var(--db-text);opacity:0;z-index:3}
 .sweep.is-on .sweep__head{opacity:1}
 /* En silencio la barra gana intensidad (--heat de 0 a 1): más gruesa, más cálida y con más brillo según se acerca la vuelta del sonido. No depende solo del color. */
-.sweep.is-silent{height:calc(12px + var(--heat, 0) * 12px)}
-.sweep.is-silent .sweep__fill{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent))}
+.sweep.is-silent{height:calc(18px + var(--heat, 0) * 12px)}
+.sweep.is-silent .sweep__segfill{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent))}
 .sweep.is-silent .sweep__head{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent));transform:translate(-50%,-50%) scale(calc(1 + var(--heat, 0) * .6));box-shadow:0 0 calc(var(--heat, 0) * 28px) color-mix(in srgb, var(--db-late) 70%, transparent)}
-.sweep.is-silent .sweep__tick{background:var(--db-text-3)}
 .status__land{font-weight:600}
 
 /* Entrada: recurso propio, distinto de la práctica. Un solo número centrado, en contorno de acento, con la etiqueta y su progreso */
@@ -230,8 +233,8 @@ body{background:var(--db-backdrop);background-attachment:fixed}
 .cell--sil{background:color-mix(in srgb, var(--db-accent) 10%, transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--db-accent) 25%, transparent)}
 .cell--sil.cell--done{background:color-mix(in srgb, var(--db-accent) 32%, transparent)}
 .cell--sil.cell--now{background:color-mix(in srgb, var(--db-accent) 50%, transparent);box-shadow:inset 0 0 0 2px var(--db-accent), var(--db-halo)}
-.sweep{box-shadow:var(--db-well)}
-.sweep__fill{background:linear-gradient(90deg, color-mix(in srgb, var(--db-accent) 15%, transparent), color-mix(in srgb, var(--db-accent) 45%, transparent))}
+.sweep__seg{box-shadow:var(--db-well)}
+.sweep__segfill{background:linear-gradient(90deg, color-mix(in srgb, var(--db-accent) 25%, transparent), color-mix(in srgb, var(--db-accent) 55%, transparent))}
 .sweep.is-on .sweep__head{box-shadow:0 0 14px -2px color-mix(in srgb, var(--db-text) 50%, transparent)}
 .switch{box-shadow:var(--db-well)}
 .switch[aria-pressed=true]{box-shadow:var(--db-halo)}
@@ -285,7 +288,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
     </div>
     <div class="count-wrap">
       <div class="count is-idle" id="count"></div>
-      <div class="sweep" id="sweep" aria-hidden="true"><i class="sweep__fill" id="sweepFill"></i><i class="sweep__head" id="sweepHead"></i></div>
+      <div class="sweep" id="sweep" aria-hidden="true"><i class="sweep__head" id="sweepHead"></i></div>
     </div>
     <div class="status" id="status"></div>
   </main>
@@ -647,18 +650,31 @@ function layoutSweep(){
   sw.style.marginLeft = g.start + 'px';
   sw.style.width = g.len + 'px';
   R.sp = g.sp;
-  sw.querySelectorAll('.sweep__tick').forEach(t=>t.remove());
-  cs.forEach((x,i)=>{ const t = document.createElement('i'); t.className = 'sweep__tick' + (i===0 ? ' sweep__tick--one' : ''); t.style.left = (x - g.start) + 'px'; sw.appendChild(t); });
+  sw.querySelectorAll('.sweep__seg').forEach(t=>t.remove());
+  const gap = Math.min(10, g.sp * .06), subs = Array.from({length:spb()-1}, (_,k)=>subOffset(k+1));
+  R.segs = cs.map((x,i)=>{
+    const seg = document.createElement('i');
+    seg.className = 'sweep__seg' + (i===0 ? ' sweep__seg--one' : '');
+    seg.style.left = (i * g.sp) + 'px';
+    seg.style.width = (g.sp - gap) + 'px';
+    seg.innerHTML = '<i class="sweep__segfill"></i>' + subs.map(f=>`<i class="sweep__sub" style="left:${(f*g.sp).toFixed(1)}px"></i>`).join('');
+    sw.insertBefore(seg, $('sweepHead'));
+    return { el:seg, fill:seg.firstChild, w:g.sp - gap };
+  });
   paintSweep();
 }
 function paintSweep(now){
   const sw = $('sweep'), on = R.playing && R.barStart!=null && now!=null;
   sw.classList.toggle('is-on', on);
-  if(!on){ $('sweepFill').style.width = '0'; $('sweepHead').style.left = '0'; if(!R.playing) sw.classList.remove('is-silent'); return; }
+  if(!on){ (R.segs||[]).forEach(s=>{ s.fill.style.width = '0'; s.el.classList.remove('is-cur'); }); $('sweepHead').style.left = '0'; if(!R.playing) sw.classList.remove('is-silent'); return; }
   const b = Math.max(0, Math.min(S.beats, (now - R.barStart) / (60/S.bpm)));
   const x = b * (R.sp || 0);
   $('sweepHead').style.left = x + 'px';
-  $('sweepFill').style.width = x + 'px';
+  (R.segs||[]).forEach((s,i)=>{
+    const f = Math.max(0, Math.min(1, b - i));
+    s.fill.style.width = Math.min(s.w, f * (R.sp||0)) + 'px';
+    s.el.classList.toggle('is-cur', b >= i && b < i+1);
+  });
   if(R.shownSilent && R.shownBar!=null){
     const total = S.silent * S.beats, into = (cyclePos(R.shownBar) - S.sound) * S.beats + b;
     sw.style.setProperty('--heat', Math.max(0, Math.min(1, into / total)).toFixed(3));
