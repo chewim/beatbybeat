@@ -42,7 +42,7 @@ Inspirado en el dark mode de producto tipo Linear/Raycast (bordes finos, canto d
 - Todo vive en una capa al final del CSS ("Luz y profundidad") que se apoya en los componentes; para quitarla basta con borrar esa capa.
 
 ## Tipografía
-Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más `--db-fs-counter` (el número de compás, muy visible a distancia). La cuenta no tiene token: `fitCount()` le da el mayor tamaño que cabe en el escenario, porque se baila mirando desde lejos. En pantalla completa se oculta la fila de tempo para que crezca más. No añadir tamaños sin quitar otro.
+Cinco tamaños (`--db-fs-1` a `--db-fs-5`) más `--db-fs-counter` (el número de compás, muy visible a distancia). La cuenta no tiene token: `fitCount()` le da el mayor tamaño que cabe en el escenario, porque se baila mirando desde lejos. Las subdivisiones van centradas en la altura del número: `&` en corcheas y swing; círculos grandes (`.beat__m--dot`) en tresillos y en cuatrillos (· & ·). No añadir tamaños sin quitar otro.
 
 ## Forma
 - `--db-radius-ctl`: todos los botones, segmentados y campos. Mismo radio siempre.

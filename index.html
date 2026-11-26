@@ -86,10 +86,12 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* Escenario: la cuenta */
 .stage{flex:1;min-height:36vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);user-select:none;border-radius:var(--db-radius-card);position:relative}
 .count-wrap{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:var(--db-s-6)}
-.count{display:flex;align-items:baseline;justify-content:center;font-weight:800;line-height:.8;letter-spacing:-.03em;margin-bottom:var(--db-s-4)} /* tamaño: fitCount() lo ajusta al escenario */
-.beat{display:flex;align-items:baseline}
+.count{display:flex;align-items:center;justify-content:center;font-weight:800;line-height:.8;letter-spacing:-.03em;margin-bottom:var(--db-s-4)} /* tamaño: fitCount() lo ajusta al escenario */
+.beat{display:flex;align-items:center}
 .beat__n{min-width:.62em;text-align:center;color:var(--db-text-3);transition:color .06s}
-.beat__m{font-size:.3em;min-width:.5em;margin:0 .2em;text-align:center;color:var(--db-text-4);transition:color .06s}
+.beat__m{font-size:.3em;min-width:.5em;margin:0 .2em;text-align:center;color:var(--db-text-4);transition:color .06s;line-height:1}
+/* Subdivisiones en círculo (tresillos y cuatrillos): grandes y centradas en la altura del número */
+.beat__m--dot{min-width:0;width:.62em;height:.62em;margin:0 .32em;border-radius:50%;background:currentColor}
 .beat__n.is-on{color:var(--db-beat-on);text-shadow:var(--db-glow)}
 .beat__m.is-on{color:var(--db-text-2)}
 .count.is-idle .beat__n{color:var(--db-text-2)}
@@ -181,7 +183,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 .stopcard__body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--db-s-5);align-items:start}
 .stopcard__pats{grid-column:1 / -1}
 /* Mientras suena, el stop time se pliega a su resumen para que la cuenta crezca; se configura en pausa */
-.is-fs .stopcard,.is-playing .stopcard{display:none}
+.is-playing .stopcard{display:none}
 .status--warn{color:var(--db-accent);font-weight:600}
 .stepper{display:flex;align-items:center;gap:var(--db-s-2)}
 .stepper output{min-width:3.2em;text-align:center;font-size:var(--db-fs-4);font-weight:600}
@@ -196,8 +198,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(-
 .keys{font-size:var(--db-fs-1);color:var(--db-text-2);line-height:1.8;margin-top:auto}
 kbd{font-family:inherit;font-size:var(--db-fs-1);padding:2px var(--db-s-1);border-radius:var(--db-radius-cell);background:var(--db-bg);border:1px solid var(--db-line);color:var(--db-text-2)}
 
-/* Pantalla completa (modo baile): fuera el tempo para que la cuenta crezca; se ajusta con ↑/↓ */
-.is-fs .row--tempo{display:none}
 /* ===== Luz y profundidad (capa sobre los componentes) =====
    Referencias: dark mode de producto tipo Linear/Raycast (bordes finos, canto de luz arriba, foco radial), adaptado a
    la paleta de escenario. Nada chillón: la luz sale del acento a baja opacidad y de bordes más claros. */
@@ -352,7 +352,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
 
   <div class="field">
     <h3 class="h">Subdivisión</h3>
-    <div class="seg" id="segFeel"><button data-v="straight">Corcheas</button><button data-v="swing">Swing</button><button data-v="triplet">Tresillos</button></div>
+    <div class="seg" id="segFeel"><button data-v="straight">Corcheas</button><button data-v="swing">Swing</button><button data-v="triplet">Tresillos</button><button data-v="sixteenth">Cuatrillos</button></div>
   </div>
 
   <div class="field">
@@ -393,7 +393,7 @@ const ON_TIME_MS = 15;
 function load(){ try{ return JSON.parse(localStorage.getItem('dabeat')||'{}'); }catch(e){ return {}; } }
 function save(){ try{ localStorage.setItem('dabeat', JSON.stringify(S)); }catch(e){} }
 const $ = id => document.getElementById(id);
-const FEEL = { straight:'Corcheas', swing:'Swing', triplet:'Tresillos' };
+const FEEL = { straight:'Corcheas', swing:'Swing', triplet:'Tresillos', sixteenth:'Cuatrillos' };
 /* Patrones de stop time (de Inner Time) */
 const PATTERNS = {
   ones:  { name:'Ones',    sound:1,  silent:1,  copy:'Uno y uno: el tiempo interno al descubierto cada compás.' },
@@ -435,9 +435,10 @@ function heardNow(perfMs){
 }
 
 /* ===================== Métrica ===================== */
-const spb = () => S.feel==='triplet' ? 3 : 2;
+const spb = () => S.feel==='triplet' ? 3 : S.feel==='sixteenth' ? 4 : 2;
 function subOffset(k){
   if(S.feel==='triplet') return k/3;
+  if(S.feel==='sixteenth') return k/4;
   if(S.feel==='swing') return k ? .66 : 0;
   return k/2;
 }
@@ -600,10 +601,10 @@ async function calibrate(){
 
 /* ===================== Render ===================== */
 function renderCount(){
-  const c = $('count'), marks = S.feel==='triplet' ? ['·','·'] : ['&'];
+  const c = $('count'), marks = S.feel==='triplet' ? ['dot','dot'] : S.feel==='sixteenth' ? ['dot','&','dot'] : ['&'];
   c.className = 'count is-idle'; c.dataset.ci = '0';
   c.innerHTML = Array.from({length:S.beats}, (_,i)=>
-    `<span class="beat"><span class="beat__n">${i+1}</span>${marks.map(m=>`<span class="beat__m">${m}</span>`).join('')}</span>`).join('');
+    `<span class="beat"><span class="beat__n">${i+1}</span>${marks.map(m=>m==='dot' ? '<span class="beat__m beat__m--dot"></span>' : `<span class="beat__m">${m}</span>`).join('')}</span>`).join('');
   fitCount();
 }
 /* La cuenta ocupa todo el escenario: el mayor tamaño que cabe a lo ancho y a lo alto, contando con la barra de tiempo */

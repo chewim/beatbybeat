@@ -19,3 +19,4 @@
 - 2026-11-25 · Capa de luz y profundidad: foco radial de escenario, degradados oscuros sutiles, canto de luz y bordes de control más claros (3:1), halo del acento solo en lo activo. · Descartado: colores más saturados. · Por qué: petición de David, menos plano sin colores chillones; de paso cierra la deuda de contraste de bordes.
 - 2026-11-25 · Compás y bloque salen de ajustes y van junto al play como steppers. · Por qué: más intuitivo que esconderlos (David).
 - 2026-11-25 · Escenario pasa de azul a negro opaco con grafito y números metálicos; play y reiniciar del mismo tamaño. · Por qué: referencia de David (negro elegante con brillo metálico); el play ya destaca por color.
+- 2026-11-26 · Subdivisiones centradas en vertical; círculos grandes para tresillos; nueva subdivisión Cuatrillos (4 por tiempo). En pantalla completa ya no se oculta la fila de tempo ni el stop time. · Por qué: petición de David; en pantalla completa no podía llegar al stop time.
