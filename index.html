@@ -96,7 +96,6 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .beat__m.is-on{color:var(--db-text-2)}
 .count.is-idle .beat__n{color:var(--db-text-2)}
 .count.is-silent .beat__n,.count.is-silent .beat__m{color:var(--db-text-4);text-shadow:none}
-.count.is-ci .beat__n.is-on{color:var(--db-text);text-shadow:none}
 .status{position:absolute;left:0;right:0;bottom:var(--db-s-2);font-size:var(--db-fs-4);color:var(--db-text-2);min-height:1.4em;text-align:center}
 .status b{color:var(--db-text)}
 
@@ -113,6 +112,15 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .sweep.is-silent .sweep__head{background:color-mix(in srgb, var(--db-late) calc(var(--heat, 0) * 100%), var(--db-accent));transform:translate(-50%,-50%) scale(calc(1 + var(--heat, 0) * .6));box-shadow:0 0 calc(var(--heat, 0) * 28px) color-mix(in srgb, var(--db-late) 70%, transparent)}
 .sweep.is-silent .sweep__tick{background:var(--db-text-3)}
 .status__land{font-weight:600}
+
+/* Entrada: recurso propio, distinto de la práctica. Un solo número centrado, en contorno de acento, con la etiqueta y su progreso */
+.intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--db-s-4);z-index:1}
+.intro__lbl{font-size:var(--db-fs-4);font-weight:600;letter-spacing:.04em;color:var(--db-accent);padding:var(--db-s-1) var(--db-s-4);border:1px solid color-mix(in srgb, var(--db-accent) 50%, transparent);border-radius:var(--db-radius-ctl)}
+.intro__n{font-size:clamp(120px, min(40vh, 60vw), 520px);font-weight:800;line-height:.8;color:transparent;-webkit-text-stroke:.025em var(--db-accent);filter:drop-shadow(0 0 .08em color-mix(in srgb, var(--db-accent) 40%, transparent))}
+.intro__dots{display:flex;gap:var(--db-s-3)}
+.intro__dots i{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--db-accent) 50%, transparent)}
+.intro__dots i.on{background:var(--db-accent);box-shadow:var(--db-halo)}
+.stage.is-intro .count-wrap,.stage.is-intro .status{visibility:hidden}
 
 /* Contador de compases */
 .counter{display:flex;flex-direction:column;gap:var(--db-s-1);padding-right:var(--db-s-5);border-right:1px solid var(--db-line);min-width:7.5ch}
@@ -207,7 +215,6 @@ body{background:var(--db-backdrop);background-attachment:fixed}
 .beat__n.is-on{background-image:var(--db-metal-on);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 .12em color-mix(in srgb, var(--db-beat-on) 45%, transparent))}
 .count.is-idle .beat__n{background-image:var(--db-metal)}
 .count.is-silent .beat__n{background-image:none;color:var(--db-text-4);filter:none}
-.count.is-ci .beat__n.is-on{background-image:linear-gradient(180deg, var(--db-light), var(--db-text));filter:none}
 .btn,.summary{background:var(--db-grad-ctl);border-color:var(--db-line-strong);box-shadow:var(--db-edge), var(--db-drop);transition:border-color .15s, box-shadow .15s, color .15s}
 .btn:hover,.summary:hover{border-color:var(--db-text-2);box-shadow:var(--db-edge), var(--db-drop), 0 0 16px -6px color-mix(in srgb, var(--db-text) 30%, transparent)}
 .btn--on,.stop-toggle[aria-pressed=true]{border-color:var(--db-accent);background:linear-gradient(180deg, color-mix(in srgb, var(--db-accent) 14%, var(--db-surface-2)) 0%, var(--db-surface) 100%);box-shadow:var(--db-edge), var(--db-halo)}
@@ -271,6 +278,11 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   </header>
 
   <main class="stage" id="stage" aria-label="Cuenta">
+    <div class="intro" id="intro" hidden aria-live="assertive">
+      <span class="intro__lbl">Entrada</span>
+      <span class="intro__n num" id="introN"></span>
+      <div class="intro__dots" id="introDots" aria-hidden="true"></div>
+    </div>
     <div class="count-wrap">
       <div class="count is-idle" id="count"></div>
       <div class="sweep" id="sweep" aria-hidden="true"><i class="sweep__fill" id="sweepFill"></i><i class="sweep__head" id="sweepHead"></i></div>
@@ -475,6 +487,7 @@ function start(){
 }
 function stop(){
   R.playing=false; clearInterval(R.timer); R.events=[];
+  showIntro(null);
   renderTransport(); renderSheet(); renderCount(); renderBlock(); renderStatus(); paintSweep();
 }
 function toggle(){ R.playing ? stop() : start(); }
@@ -496,10 +509,9 @@ function show(ev){
   const c = $('count');
   c.querySelectorAll('.is-on').forEach(e=>e.classList.remove('is-on'));
   c.classList.remove('is-idle');
-  c.classList.toggle('is-ci', ev.ci);
   c.classList.toggle('is-silent', ev.sil);
-  if(ev.ci && S.beats===4) setCountInLabels(true);
-  if(!ev.ci && c.dataset.ci==='1') setCountInLabels(false);
+  showIntro(ev);
+  if(ev.ci) return;
   if(!ev.sil){
     const b = c.children[ev.beat];
     if(b){ const el = ev.k===0 ? b.querySelector('.beat__n') : b.querySelectorAll('.beat__m')[ev.k-1]; el && el.classList.add('is-on'); }
@@ -514,12 +526,14 @@ function show(ev){
   }
   if(ev.k===0 && !ev.ci) renderStatus(ev);
 }
-function setCountInLabels(on){
-  const c = $('count'); c.dataset.ci = on ? '1' : '0';
-  [...c.children].forEach((b,i)=>{
-    b.querySelector('.beat__n').textContent = on ? (5+i) : (i+1);
-    b.querySelectorAll('.beat__m').forEach(m=>m.style.visibility = on ? 'hidden' : '');
-  });
+/* Entrada (5, 6, 7, 8 en 4/4; 1…N en otros compases): pantalla propia */
+function showIntro(ev){
+  const st = $('stage'), box = $('intro');
+  st.classList.toggle('is-intro', !!ev && ev.ci);
+  box.hidden = !(ev && ev.ci);
+  if(!ev || !ev.ci || ev.k!==0) return;
+  $('introN').textContent = S.beats===4 ? 5 + ev.beat : ev.beat + 1;
+  $('introDots').innerHTML = Array.from({length:S.beats}, (_,i)=>`<i class="${i<=ev.beat ? 'on' : ''}"></i>`).join('');
 }
 
 /* ===================== Golpes y precisión ===================== */
@@ -655,7 +669,7 @@ function renderStatus(ev){
   const st = $('status');
   st.classList.remove('status--warn');
   if(!R.playing){ st.innerHTML = 'Pulsa play o la barra espaciadora.'; return; }
-  if(R.shownBar==null || R.shownBar<0){ st.textContent = 'Entrada'; return; }
+  if(R.shownBar==null || R.shownBar<0){ st.textContent = ''; return; }
   if(R.shownSilent){
     const lastBar = cyclePos(R.shownBar) === S.sound + S.silent - 1;
     if(lastBar){ st.classList.add('status--warn'); st.textContent = `Vuelve el sonido en ${S.beats - (ev ? ev.beat : 0)}`; return; }

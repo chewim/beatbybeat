@@ -20,3 +20,4 @@
 - 2026-11-25 · Compás y bloque salen de ajustes y van junto al play como steppers. · Por qué: más intuitivo que esconderlos (David).
 - 2026-11-25 · Escenario pasa de azul a negro opaco con grafito y números metálicos; play y reiniciar del mismo tamaño. · Por qué: referencia de David (negro elegante con brillo metálico); el play ya destaca por color.
 - 2026-11-26 · Subdivisiones centradas en vertical; círculos grandes para tresillos; nueva subdivisión Cuatrillos (4 por tiempo). En pantalla completa ya no se oculta la fila de tempo ni el stop time. · Por qué: petición de David; en pantalla completa no podía llegar al stop time.
+- 2026-11-26 · La entrada deja de reutilizar la fila de práctica: pantalla propia con un número centrado en contorno, etiqueta "Entrada" y progreso en puntos. · Por qué: que quede claro que aún no se está practicando (David).
