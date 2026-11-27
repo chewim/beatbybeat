@@ -214,12 +214,14 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .bar{position:relative;padding:var(--db-s-3) var(--db-s-2) var(--db-s-2);border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well);min-height:150px}
 .bar.is-cur{box-shadow:var(--db-well), inset 0 0 0 1.5px color-mix(in srgb, var(--db-late) 60%, transparent)}
 .bar__n{position:absolute;top:var(--db-s-2);left:var(--db-s-3);font-size:var(--db-fs-1);color:var(--db-text-2)}
-.bar__svg{display:block;width:100%;height:104px}
+.bar__svg{display:block;width:100%;height:132px}
 .bar__svg svg{display:block}
 .counts{display:grid;grid-template-columns:repeat(var(--slots,16),minmax(0,1fr));gap:2px;margin-top:var(--db-s-1)}
 .counts span{font-size:var(--db-fs-1);text-align:center;color:var(--db-text-4);padding:2px 0;border-radius:var(--db-radius-mark)}
 .counts span.is-beat{color:var(--db-text-3);font-weight:600}
 .counts span.is-hit{color:var(--db-on-accent);background:var(--db-accent);font-weight:700}
+.counts span.is-lo{color:var(--db-text);background:color-mix(in srgb, var(--db-accent) 32%, var(--db-bg))}
+.counts span.is-ghost{opacity:.55}
 .counts span.is-acc{box-shadow:0 0 0 1.5px var(--db-late)}
 .counts span.is-play{outline:2px solid var(--db-text);outline-offset:1px}
 .score-ctl__main{display:flex;gap:var(--db-s-2)}
@@ -833,11 +835,14 @@ function signed(m){ const r=Math.round(m); return (r>0?'+':r<0?'−':'') + Math.
 
 /* ===================== Micro ===================== */
 const WORKLET = `class Onset extends AudioWorkletProcessor{
-  constructor(){super();this.thr=.13;this.hold=0;this.floor=.005;this.pk=0;this.n=0;this.port.onmessage=e=>{this.thr=e.data};}
-  process(inp){const ch=inp[0]&&inp[0][0];if(!ch)return true;let s=0;
-    for(let i=0;i<ch.length;i++){const a=Math.abs(ch[i]);s+=ch[i]*ch[i];if(a>this.pk)this.pk=a;
+  constructor(){super();this.thr=.13;this.hold=0;this.floor=.005;this.pk=0;this.n=0;this.cap=0;this.lp=0;this.prev=0;this.port.onmessage=e=>{this.thr=e.data};}
+  process(inp){const ch=inp[0]&&inp[0][0];if(!ch)return true;let s=0;const k=1-Math.exp(-2*Math.PI*350/sampleRate);
+    for(let i=0;i<ch.length;i++){const x=ch[i],a=Math.abs(x);s+=x*x;if(a>this.pk)this.pk=a;
+      this.lp+=k*(x-this.lp);const d=x-this.prev;this.prev=x;
+      if(this.cap>0){this.cA=Math.max(this.cA,a);this.cL+=this.lp*this.lp;this.cH+=d*d;
+        if(--this.cap===0)this.port.postMessage({t:this.cT,a:this.cA,b:this.cH/(this.cL+1e-9)});}
       if(this.hold>0){this.hold--;continue;}
-      if(a>this.thr&&a>this.floor*6){this.port.postMessage({t:currentTime+i/sampleRate,a});this.hold=(sampleRate*.08)|0;}}
+      if(a>this.thr&&a>this.floor*6){this.cT=currentTime+i/sampleRate;this.cap=(sampleRate*.04)|0;this.cA=a;this.cL=0;this.cH=0;this.hold=(sampleRate*.08)|0;}}
     this.floor=this.floor*.99+Math.sqrt(s/ch.length)*.01;
     if(++this.n%8===0){this.port.postMessage({lvl:this.pk});this.pk=0;}
     return true;}}
@@ -859,7 +864,7 @@ async function micOn(){
       if(d.lvl!=null){ $('lvl').style.width = Math.min(100, d.lvl*100/.6)+'%'; return; }
       if(R.calib){ R.calib.hits.push(d.t); return; }
       flashHit();
-      scoreHit(d.t - rtLat(), d.a);
+      scoreHit(d.t - rtLat(), d.a, d.b);
       registerHit(d.t - rtLat(), 'mic');
     };
     R.mic = { stream, node }; R.micAt = performance.now();
@@ -1047,8 +1052,8 @@ function renderMic(){
 /* Resolución: semicorcheas (4 por tiempo); tresillos y swing en rejilla de 3 */
 const scoreRes = () => (S.feel==='triplet' || S.feel==='swing') ? 3 : 4;
 const COUNT_LBL = { 4:['','e','&','a'], 3:['','&','a'] };
-function newScore(){ return { bpm:S.bpm, rec:false, start:null, bars:S.scoreBars || Infinity, beats:S.beats, res:scoreRes(), hits:{}, acc:{}, amps:[] }; }
-function scoreHit(t, a){
+function newScore(){ return { bpm:S.bpm, rec:false, start:null, bars:S.scoreBars || Infinity, beats:S.beats, res:scoreRes(), hits:{}, raw:{}, cls:null }; }
+function scoreHit(t, a, b){
   const sc = R.sc;
   if(!sc || !sc.rec || sc.start==null || !R.playing) return;
   const bd = 60/S.bpm, r = sc.res;
@@ -1060,10 +1065,36 @@ function scoreHit(t, a){
   const slot = Math.max(0, Math.min(r-1, Math.round(best.f * r)));
   const key = bar*sc.beats*r + best.g.beat*r + slot;
   sc.hits[key] = true;
-  sc.amps.push(a || 0);
-  const med = [...sc.amps].sort((x,y)=>x-y)[sc.amps.length>>1] || 0;
-  if(sc.amps.length > 4 && a > med*1.8) sc.acc[key] = true;
+  if(!sc.raw[key] || a > sc.raw[key].a) sc.raw[key] = { a: a || 0, b: b || 1 };
+  sc.cls = null;
   renderScoreSoon();
+}
+/* Textura: cada golpe se clasifica dentro de la propia grabación.
+   Tono: agudo (punta, brillante) / grave (talón, planta) según el reparto del brillo; si no hay dos grupos claros, todo medio.
+   Dinámica: suave (fantasma) / normal / acento según la fuerza respecto a la mediana. */
+function scoreCls(sc){
+  if(sc.cls) return sc.cls;
+  if(sc.fixed) return (sc.cls = sc.fixed);
+  const keys = Object.keys(sc.hits).filter(k=>sc.raw[k]), out = {};
+  const amps = keys.map(k=>sc.raw[k].a).sort((x,y)=>x-y), med = amps[amps.length>>1] || 1;
+  const lb = keys.map(k=>Math.log(sc.raw[k].b)), sorted = [...lb].sort((x,y)=>x-y);
+  let split = null;
+  if(sorted.length >= 4){
+    let bestCost = Infinity, bi = -1;
+    for(let i=1;i<sorted.length;i++){
+      const A = sorted.slice(0,i), B = sorted.slice(i), mA = A.reduce((s,x)=>s+x,0)/A.length, mB = B.reduce((s,x)=>s+x,0)/B.length;
+      const cost = A.reduce((s,x)=>s+(x-mA)**2,0) + B.reduce((s,x)=>s+(x-mB)**2,0);
+      if(cost < bestCost){ bestCost = cost; bi = i; split = { mA, mB, thr:(sorted[i-1]+sorted[i])/2 }; }
+    }
+    const sd = Math.sqrt(bestCost / sorted.length);
+    if(!(split.mB - split.mA > Math.max(.45, 2.2*sd))) split = null;
+  }
+  keys.forEach((k,i)=>{
+    const rel = sc.raw[k].a / med;
+    out[k] = { tone: !split ? 'mid' : lb[i] > split.thr ? 'hi' : 'lo', dyn: amps.length > 4 && rel > 1.4 ? 2 : amps.length > 4 && rel < .55 ? 0 : 1, vel: Math.max(.3, Math.min(2, rel)) };
+  });
+  Object.keys(sc.hits).forEach(k=>{ if(!out[k]) out[k] = { tone:'mid', dyn:1, vel:1 }; });
+  return (sc.cls = out);
 }
 function scoreProgress(){
   const sc = R.sc;
@@ -1133,7 +1164,7 @@ function renderScore(){
   $('recState').textContent = !sc.rec ? (Object.keys(sc.hits).length ? `${total} compases` : '') : cur < 0 ? `Prepárate · ${-cur} ${-cur===1?'compás':'compases'} con metrónomo`
     : isFinite(sc.bars) ? `Escribiendo compás ${Math.min(cur+1, sc.bars)} de ${sc.bars}` : `Escribiendo compás ${cur+1} · Parar cuando acabes`;
   $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Antes de escribir suenan los compases de preparación con metrónomo; después se calla (salvo con auriculares) y te guían la cuenta y la pista. En Libre escribe hasta que pulses Parar.'
-    : 'Semicorcheas como resolución (tresillos si eliges tresillos o swing). Los golpes más fuertes salen con acento.';
+    : 'Línea de arriba: agudo (punta) · centro: un solo timbre · abajo: grave (talón, planta). > acento · gris: golpe suave. Celda clara agudo, oscura grave.';
   const per = Math.min(total, window.innerWidth < 760 ? 1 : 4);
   const box = $('notation'); box.style.setProperty('--per', per);
   if(!window.Vex){ box.innerHTML = '<p class="hint">Cargando notación…</p>'; loadVexflow().then(renderScore).catch(()=>{ box.innerHTML = '<p class="hint">No se ha podido cargar la notación. Revisa la conexión.</p>'; }); return; }
@@ -1145,7 +1176,8 @@ function renderScore(){
     if(!el){ el = document.createElement('div'); el.className = 'bar'; box.appendChild(el); }
     el.classList.toggle('is-cur', b===cur);
     let sig = `${nb}|${r}|${b===0}|`;
-    for(let i=0;i<nb*r;i++){ const key = b*nb*r + i; sig += sc.hits[key] ? (sc.acc[key] ? 'A' : 'x') : '.'; }
+    const cls = scoreCls(sc);
+    for(let i=0;i<nb*r;i++){ const key = b*nb*r + i, c = cls[key]; sig += sc.hits[key] && c ? c.tone + c.dyn : '.'; }
     const W = Math.max(160, el.clientWidth - 16);
     sig += '|' + Math.round(W/8);
     if(el.dataset.sig === sig) continue;
@@ -1158,21 +1190,23 @@ function renderScore(){
   }
 }
 function drawBar(el, sc, b, W){
-  const VF = Vex.Flow, r = sc.res, nb = sc.beats, ink = getComputedStyle(document.documentElement).getPropertyValue('--db-text').trim() || '#EDEDEF';
+  const css = getComputedStyle(document.documentElement), VF = Vex.Flow, r = sc.res, nb = sc.beats, ink = css.getPropertyValue('--db-text').trim() || '#EDEDEF', dim = css.getPropertyValue('--db-text-3').trim() || ink;
   let counts = '';
-  for(let bt=0;bt<nb;bt++) for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; counts += `<span class="${k===0?'is-beat ':''}${sc.hits[key]?'is-hit ':''}${sc.acc[key]?'is-acc':''}">${k===0 ? bt+1 : COUNT_LBL[r][k]}</span>`; }
-  el.innerHTML = `<span class="bar__n">${b+1}</span><div class="bar__svg"></div><div class="counts" style="--slots:${nb*r}">${counts}</div>`;
-  const ren = new VF.Renderer(el.querySelector('.bar__svg'), VF.Renderer.Backends.SVG); ren.resize(W, 104);
+  const cls = scoreCls(sc);
+  for(let bt=0;bt<nb;bt++) for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k, c = sc.hits[key] && cls[key]; counts += `<span class="${k===0?'is-beat ':''}${c?'is-hit is-'+c.tone+' ':''}${c&&c.dyn===2?'is-acc ':''}${c&&c.dyn===0?'is-ghost':''}">${k===0 ? bt+1 : COUNT_LBL[r][k]}</span>`; }
+  el.innerHTML = `<span class="bar__n">${b+1}${b===0 ? ` · ${nb}/4 · ${sc.bpm || S.bpm} BPM` : ''}</span><div class="bar__svg"></div><div class="counts" style="--slots:${nb*r}">${counts}</div>`;
+  const ren = new VF.Renderer(el.querySelector('.bar__svg'), VF.Renderer.Backends.SVG); ren.resize(W, 132);
   const ctx = ren.getContext(); ctx.setFillStyle(ink); ctx.setStrokeStyle(ink);
-  const st = new VF.Stave(0, 18, W - 2, { num_lines:1, left_bar:b===0, right_bar:true, space_above_staff_ln:3 });
-  if(b===0) st.addTimeSignature(`${nb}/4`);
+  const st = new VF.Stave(0, 22, W - 2, { num_lines:3, left_bar:b===0, right_bar:true, space_above_staff_ln:2.2, spacing_between_lines_px:13 });
   st.setContext(ctx).draw();
   const notes = [], beams = [], tuplets = [];
   for(let bt=0;bt<nb;bt++){
     const slots = Array.from({length:r}, (_,k)=>!!sc.hits[b*nb*r + bt*r + k]);
     const group = beatToNotes(slots, r).map(n=>{
-      const sn = new VF.StaveNote({ keys:['f/5'], duration:n.d, stem_direction:1 });
-      if(n.hit && sc.acc[b*nb*r + bt*r + n.i]) sn.addModifier(new VF.Articulation('a>').setPosition(3), 0);
+      const c = n.hit ? cls[b*nb*r + bt*r + n.i] : null;
+      const sn = new VF.StaveNote({ keys:[!c ? 'd/5' : c.tone==='hi' ? 'f/5' : c.tone==='lo' ? 'b/4' : 'd/5'], duration:n.d, stem_direction:1 });
+      if(c && c.dyn===2) sn.addModifier(new VF.Articulation('a>').setPosition(3), 0);
+      if(c && c.dyn===0) sn.setStyle({ fillStyle:dim, strokeStyle:dim });
       if(n.d.endsWith('d') || n.d === '8dr') VF.Dot.buildAndAttach([sn], { all:true });
       return sn;
     });
@@ -1181,23 +1215,27 @@ function drawBar(el, sc, b, W){
     try{ beams.push(...VF.Beam.generateBeams(group, { beam_rests:false, stem_direction:1 })); }catch(e){}
   }
   const voice = new VF.Voice({ num_beats:nb, beat_value:4 }).setMode(VF.Voice.Mode.SOFT).addTickables(notes);
-  new VF.Formatter().joinVoices([voice]).format([voice], W - (b===0 ? 70 : 30));
+  new VF.Formatter().joinVoices([voice]).format([voice], W - 30);
   voice.draw(ctx, st);
   beams.forEach(bm=>{ try{ bm.setContext(ctx).draw(); }catch(e){} });
   tuplets.forEach(tp=>tp.setContext(ctx).draw());
 }
 /* Escuchar lo grabado: un compás de entrada y la frase en bucle, con golpe de claqué sintetizado y metrónomo suave */
-function tap(t, accent){
-  const n = Math.floor(ctx.sampleRate * .05), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
-  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, 6);
+function tap(t, c){
+  const tone = c ? c.tone : 'mid', vel = c ? (c.vel ?? [.4, .9, 1.6][c.dyn]) : 1;
+  const P = { hi:{ f:5200, q:1.8, body:0, nd:.035 }, mid:{ f:3000, q:1.3, body:.35, nd:.05 }, lo:{ f:1100, q:.9, body:.9, nd:.07 } }[tone];
+  const n = Math.floor(ctx.sampleRate * P.nd), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, tone==='hi' ? 9 : 5);
   const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
-  src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 1.4;
-  g.gain.value = accent ? 1.6 : .9;
+  src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = P.f; bp.Q.value = P.q;
+  g.gain.value = .9 * vel * (tone==='lo' ? 1.3 : 1);
   src.connect(bp).connect(g).connect(ctx.destination); src.start(t);
-  const o = ctx.createOscillator(), og = ctx.createGain();
-  o.frequency.setValueAtTime(accent ? 240 : 190, t); o.frequency.exponentialRampToValueAtTime(70, t+.05);
-  og.gain.setValueAtTime(accent ? .5 : .3, t); og.gain.exponentialRampToValueAtTime(.0001, t+.06);
-  o.connect(og).connect(ctx.destination); o.start(t); o.stop(t+.07);
+  if(P.body){
+    const o = ctx.createOscillator(), og = ctx.createGain(), f0 = tone==='lo' ? 150 : 230;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0*.4, t + .08);
+    og.gain.setValueAtTime(.0001, t); og.gain.linearRampToValueAtTime(P.body * .6 * vel, t + .002); og.gain.exponentialRampToValueAtTime(.0001, t + (tone==='lo' ? .12 : .06));
+    o.connect(og).connect(ctx.destination); o.start(t); o.stop(t + .13);
+  }
 }
 function pbTick(){
   const pb = R.pb, sc = R.sc; if(!pb || !sc) return;
@@ -1208,7 +1246,8 @@ function pbTick(){
       const tb = pb.next + bt*bd;
       click(tb, bt===0 ? 'acc' : 'beat', b < 0 ? .7 : .28);
       if(b < 0) continue;
-      for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; if(sc.hits[key]) tap(tb + k/r*bd, !!sc.acc[key]); }
+      const cls = scoreCls(sc);
+      for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; if(sc.hits[key]) tap(tb + k/r*bd, cls[key]); }
     }
     pb.marks.push({ t: pb.next, bar: b });
     pb.next += nb*bd; pb.bar = pb.bar + 1 >= total ? 0 : pb.bar + 1;
@@ -1256,15 +1295,23 @@ function renderListen(){
 
 /* Enlace: el ritmo va dentro del propio enlace (sin servidor) */
 const SHARE_BASE = 'https://chewim.github.io/beatbybeat/';
+/* v2: un carácter por hueco. '-' vacío; si no, letra = tono (grave/medio/agudo) × dinámica (suave/normal/acento) */
+const TONES = ['lo','mid','hi'];
 function scoreCode(sc){
-  const r = sc.res, nb = sc.beats, parts = [];
-  for(let b=0;b<sc.bars;b++){ let s2=''; for(let bt=0;bt<nb;bt++){ let h=0, a=0; for(let k=0;k<r;k++){ const key=b*nb*r+bt*r+k; if(sc.hits[key]) h|=1<<k; if(sc.acc[key]) a|=1<<k; } s2 += h.toString(16) + a.toString(16); } parts.push(s2); }
-  return `${nb}-${r}-${S.bpm}-${parts.join('.')}`;
+  const r = sc.res, nb = sc.beats, cls = scoreCls(sc), parts = [], total = scoreShownBars(sc, -1);
+  for(let b=0;b<total;b++){ let s2=''; for(let i=0;i<nb*r;i++){ const key = b*nb*r + i, c = cls[key]; s2 += sc.hits[key] && c ? String.fromCharCode(97 + TONES.indexOf(c.tone)*3 + c.dyn) : '-'; } parts.push(s2); }
+  return `2-${nb}-${r}-${sc.bpm || S.bpm}-${parts.join('.')}`;
 }
 function scoreFromCode(code){
-  const m = /^(\d+)-(\d)-(\d+)-([0-9a-f.]+)$/.exec(code||''); if(!m) return null;
-  const nb = +m[1], r = +m[2], bars = m[4].split('.'), sc = { rec:false, start:null, bars:bars.length, beats:nb, res:r, hits:{}, acc:{}, amps:[], bpm:+m[3] };
-  bars.forEach((s2,b)=>{ for(let bt=0;bt<nb;bt++){ const h = parseInt(s2[bt*2]||'0',16), a = parseInt(s2[bt*2+1]||'0',16); for(let k=0;k<r;k++){ const key=b*nb*r+bt*r+k; if(h>>k&1) sc.hits[key]=true; if(a>>k&1) sc.acc[key]=true; } } });
+  let m = /^2-(\d+)-(\d)-(\d+)-([a-i.\-]+)$/.exec(code||'');
+  if(m){
+    const nb = +m[1], r = +m[2], bars = m[4].split('.'), sc = { rec:false, start:null, bars:bars.length, beats:nb, res:r, hits:{}, raw:{}, fixed:{}, cls:null, bpm:+m[3] };
+    bars.forEach((s2,b)=>{ for(let i=0;i<nb*r;i++){ const ch = s2[i]; if(!ch || ch==='-') continue; const v = ch.charCodeAt(0) - 97, key = b*nb*r + i; sc.hits[key] = true; sc.fixed[key] = { tone: TONES[Math.floor(v/3)], dyn: v%3 }; } });
+    return sc;
+  }
+  m = /^(\d+)-(\d)-(\d+)-([0-9a-f.]+)$/.exec(code||''); if(!m) return null; /* enlaces antiguos */
+  const nb = +m[1], r = +m[2], bars = m[4].split('.'), sc = { rec:false, start:null, bars:bars.length, beats:nb, res:r, hits:{}, raw:{}, fixed:{}, cls:null, bpm:+m[3] };
+  bars.forEach((s2,b)=>{ for(let bt=0;bt<nb;bt++){ const h = parseInt(s2[bt*2]||'0',16), a = parseInt(s2[bt*2+1]||'0',16); for(let k=0;k<r;k++){ const key=b*nb*r+bt*r+k; if(h>>k&1){ sc.hits[key]=true; sc.fixed[key] = { tone:'mid', dyn: a>>k&1 ? 2 : 1 }; } } } });
   return sc;
 }
 async function copyScoreLink(){
