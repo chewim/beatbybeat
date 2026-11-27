@@ -586,15 +586,16 @@ function click(t, kind, vol=1){
   const peak = (kind==='acc' ? .9 : kind==='beat' ? .6 : .22) * vol;
   const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
   o.type='square'; o.frequency.value=f; lp.type='lowpass'; lp.frequency.value=f*3;
-  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+.001); g.gain.exponentialRampToValueAtTime(.0001,t+.045);
-  o.connect(lp).connect(g).connect(ctx.destination); o.start(t); o.stop(t+.06);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+.001); g.gain.exponentialRampToValueAtTime(.0001,t+.07);
+  o.connect(lp).connect(g).connect(ctx.destination); o.start(t); o.stop(t+.09);
 }
 /* Mantiene viva la salida de audio durante el silencio del stop time. Altavoces y auriculares Bluetooth se duermen con el
-   silencio digital y se comen el primer golpe al volver (se oiría primero el "&"). Una señal grave a -68 dB lo evita y no se oye. */
+   silencio digital y se comen los golpes cortos (o el primero al volver). Una señal de 22 Hz a -40 dB los mantiene despiertos:
+   a -68 dB no bastaba para un altavoz Bluetooth (SPC). A 22 Hz ni los altavoces pequeños la reproducen ni el oído la percibe. */
 function keepAlive(on){
   if(on && !R.keep){
     const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = 22; g.gain.value = .0004;
+    o.frequency.value = 22; g.gain.value = .01;
     o.connect(g).connect(ctx.destination); o.start();
     R.keep = o;
   } else if(!on && R.keep){ R.keep.stop(); R.keep.disconnect(); R.keep = null; }
