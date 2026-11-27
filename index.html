@@ -546,26 +546,40 @@ fitAnchors();
 
 /* ===================== Audio ===================== */
 function audio(){
-  if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+  if(!ctx || ctx.state==='closed') ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
   if(ctx.state==='suspended') ctx.resume();
   return ctx;
 }
-/* Si cambia la salida de audio (conectar o quitar Bluetooth, auriculares…), el contexto puede seguir sonando por la salida
-   anterior. Se rehace el audio en la nueva salida y, si estaba sonando, se retoma desde el principio. */
+/* Si cambia la salida de audio (conectar o quitar Bluetooth, auriculares…), el contexto puede seguir en la salida anterior.
+   No se rehace al momento: un contexto nuevo sin un toque del usuario nace en pausa y no suena. Se para, se avisa y el
+   audio se rehace en el siguiente play. Solo cuenta si cambian las salidas: activar el micro también cambia dispositivos. */
+async function outputsSig(){
+  try{ return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audiooutput').map(d=>d.deviceId+d.label).sort().join('|'); }
+  catch(e){ return ''; }
+}
 if(navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+  outputsSig().then(sig=>R.outSig = sig);
   navigator.mediaDevices.addEventListener('devicechange', ()=>{
-    if(!ctx || R.calib) return;
     clearTimeout(R.devTO);
     R.devTO = setTimeout(async ()=>{
-      const was = R.playing, hadMic = !!R.mic;
-      if(was) stop();
-      micOff(); keepAlive(false);
-      try{ await ctx.close(); }catch(e){}
-      ctx = null;
-      if(hadMic){ await micOn(); renderMic(); renderPrecSetup(); }
-      if(was) start();
-    }, 600);
+      const sig = await outputsSig();
+      if(sig === R.outSig || R.calib) return;
+      R.outSig = sig;
+      if(!ctx) return;
+      R.newCtx = true;
+      if(R.playing){ stop(); $('status').innerHTML = 'Ha cambiado la salida de audio. <b>Pulsa play</b> para seguir.'; }
+    }, 800);
   });
+}
+function freshAudio(){
+  if(!R.newCtx || !ctx) return;
+  R.newCtx = false;
+  const hadMic = !!R.mic;
+  micOff(); keepAlive(false);
+  try{ ctx.close(); }catch(e){}
+  ctx = null;
+  audio();
+  if(hadMic) micOn().then(()=>{ renderMic(); renderPrecSetup(); });
 }
 function click(t, kind, vol=1){
   const f = kind==='acc' ? 1760 : kind==='beat' ? 1180 : 820;
@@ -630,6 +644,7 @@ function scheduler(){
   while(R.grid.length && R.grid[0].t < old) R.grid.shift();
 }
 function start(){
+  freshAudio();
   audio();
   if(S.mic) micOn().then(renderMic);
   Object.assign(R, { playing:true, beat:0, bar:S.countIn ? -1 : 0, stopAnchor:0, nextBeat:ctx.currentTime + .15, grid:[], events:[], shownBar:null, shownSilent:false, barStart:null, landing:null, sectionHits:[] });
