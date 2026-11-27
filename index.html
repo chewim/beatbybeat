@@ -221,6 +221,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .counts span.is-beat{color:var(--db-text-3);font-weight:600}
 .counts span.is-hit{color:var(--db-on-accent);background:var(--db-accent);font-weight:700}
 .counts span.is-acc{box-shadow:0 0 0 1.5px var(--db-late)}
+.counts span.is-play{outline:2px solid var(--db-text);outline-offset:1px}
+.listen{display:inline-flex;align-items:center;gap:var(--db-s-2)}
+.listen[aria-pressed=true]{border-color:var(--db-accent);color:var(--db-accent)}
 
 /* Contador de compases */
 .counter{display:flex;flex-direction:column;gap:var(--db-s-1);padding-right:var(--db-s-5);border-right:1px solid var(--db-line);min-width:7.5ch}
@@ -418,6 +421,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
         <div class="mini"><span class="lbl">Preparación</span><div class="seg" id="segScorePrep"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="4">4</button></div></div>
         <span class="lbl score-ctl__state" id="recState"></span>
         <div class="score-ctl__share">
+          <button class="btn listen" id="scorePlay" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="scorePlayIco" d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg><span id="scorePlayLbl">Escuchar</span></button>
           <button class="btn" id="scoreLink">Copiar enlace</button>
           <button class="btn" id="scorePng">Descargar imagen</button>
           <button class="btn" id="scoreClear">Borrar</button>
@@ -706,6 +710,7 @@ function scheduler(){
   while(R.grid.length && R.grid[0].t < old) R.grid.shift();
 }
 function start(){
+  stopListen();
   freshAudio();
   audio();
   if(S.mic) micOn().then(renderMic);
@@ -804,6 +809,7 @@ function showVerdict(g){
   clearTimeout(R.vTO); R.vTO = setTimeout(()=>v.hidden = true, 2600);
 }
 function renderLive(){
+  if(R.pb) return;
   const sc = R.sc;
   if(sc && sc.rec && R.playing && sc.start!=null){
     const left = R.shownBar==null ? sc.start + 1 : sc.start - R.shownBar;
@@ -1039,7 +1045,7 @@ function renderMic(){
 /* Resolución: semicorcheas (4 por tiempo); tresillos y swing en rejilla de 3 */
 const scoreRes = () => (S.feel==='triplet' || S.feel==='swing') ? 3 : 4;
 const COUNT_LBL = { 4:['','e','&','a'], 3:['','&','a'] };
-function newScore(){ return { rec:false, start:null, bars:S.scoreBars || Infinity, beats:S.beats, res:scoreRes(), hits:{}, acc:{}, amps:[] }; }
+function newScore(){ return { bpm:S.bpm, rec:false, start:null, bars:S.scoreBars || Infinity, beats:S.beats, res:scoreRes(), hits:{}, acc:{}, amps:[] }; }
 function scoreHit(t, a){
   const sc = R.sc;
   if(!sc || !sc.rec || sc.start==null || !R.playing) return;
@@ -1063,6 +1069,7 @@ function scoreProgress(){
   if(R.shownBar >= sc.start + sc.bars){ stopRec(); }
 }
 function startRec(){
+  stopListen();
   R.sc = newScore(); R.sc.rec = true;
   if(!R.mic){ micOn().then(()=>{ renderMic(); renderPrecSetup(); renderScore(); }); }
   if(!R.playing) start();
@@ -1176,6 +1183,74 @@ function drawBar(el, sc, b, W){
   beams.forEach(bm=>{ try{ bm.setContext(ctx).draw(); }catch(e){} });
   tuplets.forEach(tp=>tp.setContext(ctx).draw());
 }
+/* Escuchar lo grabado: un compás de entrada y la frase en bucle, con golpe de claqué sintetizado y metrónomo suave */
+function tap(t, accent){
+  const n = Math.floor(ctx.sampleRate * .05), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, 6);
+  const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+  src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 1.4;
+  g.gain.value = accent ? 1.6 : .9;
+  src.connect(bp).connect(g).connect(ctx.destination); src.start(t);
+  const o = ctx.createOscillator(), og = ctx.createGain();
+  o.frequency.setValueAtTime(accent ? 240 : 190, t); o.frequency.exponentialRampToValueAtTime(70, t+.05);
+  og.gain.setValueAtTime(accent ? .5 : .3, t); og.gain.exponentialRampToValueAtTime(.0001, t+.06);
+  o.connect(og).connect(ctx.destination); o.start(t); o.stop(t+.07);
+}
+function pbTick(){
+  const pb = R.pb, sc = R.sc; if(!pb || !sc) return;
+  const bd = 60/pb.bpm, r = sc.res, nb = sc.beats, total = scoreShownBars(sc, -1);
+  while(pb.next < ctx.currentTime + .2){
+    const b = pb.bar;
+    for(let bt=0;bt<nb;bt++){
+      const tb = pb.next + bt*bd;
+      click(tb, bt===0 ? 'acc' : 'beat', b < 0 ? .7 : .28);
+      if(b < 0) continue;
+      for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; if(sc.hits[key]) tap(tb + k/r*bd, !!sc.acc[key]); }
+    }
+    pb.marks.push({ t: pb.next, bar: b });
+    pb.next += nb*bd; pb.bar = pb.bar + 1 >= total ? 0 : pb.bar + 1;
+  }
+}
+function pbLoop(){
+  const pb = R.pb; if(!pb) return;
+  const now = heardNow() - S.av/1000, bd = 60/pb.bpm, sc = R.sc, r = sc.res, nb = sc.beats;
+  while(pb.marks.length > 1 && pb.marks[1].t <= now) pb.marks.shift();
+  const m = pb.marks[0]; let idx = -1, bar = -1;
+  if(m && now >= m.t && m.bar >= 0){ const f = (now - m.t)/bd; bar = m.bar; idx = bar*nb*r + Math.min(nb*r-1, Math.floor(f*r + .5/r)); }
+  if(idx !== pb.shown){
+    document.querySelectorAll('#notation .is-play').forEach(e=>e.classList.remove('is-play'));
+    const barEl = $('notation').children[bar];
+    if(barEl){ const sp = barEl.querySelectorAll('.counts span')[idx - bar*nb*r]; if(sp) sp.classList.add('is-play'); }
+    if(bar !== pb.shownBar && barEl){ pb.shownBar = bar; const box = $('notation'), top = barEl.offsetTop - box.offsetTop; if(top < box.scrollTop || top + barEl.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTo({ top: top - 8, behavior:'smooth' }); }
+    pb.shown = idx;
+  }
+  $('liveTxt').textContent = bar < 0 ? 'Entrada' : `Escuchando · compás ${bar+1}`;
+  requestAnimationFrame(pbLoop);
+}
+function startListen(){
+  if(!R.sc || !Object.keys(R.sc.hits).length){ $('recState').textContent = 'Primero escribe un ritmo.'; return; }
+  if(R.sc.rec) stopRec();
+  if(R.playing) stop();
+  freshAudio(); audio(); keepAlive(true);
+  R.pb = { bpm: R.sc.bpm || S.bpm, next: ctx.currentTime + .15, bar: -1, marks: [], shown: null, shownBar: null };
+  pbTick(); R.pb.timer = setInterval(pbTick, 25);
+  $('live').hidden = false; $('live').classList.add('live--prep');
+  renderListen(); requestAnimationFrame(pbLoop);
+}
+function stopListen(){
+  if(!R.pb) return;
+  clearInterval(R.pb.timer); R.pb = null; keepAlive(false);
+  document.querySelectorAll('#notation .is-play').forEach(e=>e.classList.remove('is-play'));
+  $('live').classList.remove('live--prep'); $('liveTxt').textContent = 'Midiendo tus golpes'; $('live').hidden = true;
+  renderListen();
+}
+function renderListen(){
+  const on = !!R.pb;
+  $('scorePlay').setAttribute('aria-pressed', on);
+  $('scorePlayLbl').textContent = on ? 'Parar' : 'Escuchar';
+  $('scorePlayIco').setAttribute('d', on ? 'M2 2h8v8H2z' : 'M3 1.5v9l7.5-4.5z');
+}
+
 /* Enlace: el ritmo va dentro del propio enlace (sin servidor) */
 const SHARE_BASE = 'https://chewim.github.io/beatbybeat/';
 function scoreCode(sc){
@@ -1214,7 +1289,7 @@ async function downloadScorePng(){
   cv.toBlob(bl=>{ const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = 'dabeat-ritmo.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000); });
 }
 function openScore(){ $('score').hidden = false; $('scoreBtn').classList.add('btn--on'); renderScore(); requestAnimationFrame(()=>{ fitCount(); $('score').scrollIntoView({behavior:'smooth', block:'nearest'}); }); }
-function closeScore(){ $('score').hidden = true; $('scoreBtn').classList.remove('btn--on'); requestAnimationFrame(fitCount); }
+function closeScore(){ stopListen(); $('score').hidden = true; $('scoreBtn').classList.remove('btn--on'); requestAnimationFrame(fitCount); }
 
 /* ===================== Panel de precisión ===================== */
 function flashHit(){ const d = $('hitDot'); d.classList.add('is-hit'); clearTimeout(R.hitTO); R.hitTO = setTimeout(()=>d.classList.remove('is-hit'), 120); }
@@ -1336,8 +1411,9 @@ $('scoreClose').onclick = closeScore;
 $('recBtn').onclick = ()=> (R.sc && R.sc.rec) ? stopRec() : startRec();
 document.querySelectorAll('#segScoreBars button').forEach(b=>b.onclick = ()=>{ S.scoreBars = +b.dataset.v; save(); if(!(R.sc && R.sc.rec)){ R.sc = R.sc && Object.keys(R.sc.hits).length ? R.sc : null; } renderScore(); });
 document.querySelectorAll('#segScorePrep button').forEach(b=>b.onclick = ()=>{ S.scorePrep = +b.dataset.v; save(); renderScore(); });
-$('scoreClear').onclick = ()=>{ R.sc = null; $('notation').innerHTML = ''; renderScore(); };
+$('scoreClear').onclick = ()=>{ stopListen(); R.sc = null; $('notation').innerHTML = ''; renderScore(); };
 $('scoreLink').onclick = copyScoreLink;
+$('scorePlay').onclick = ()=> R.pb ? stopListen() : startListen();
 $('scorePng').onclick = downloadScorePng;
 new ResizeObserver(()=>{ if(!$('score').hidden) renderScoreSoon(); }).observe(document.getElementById('notation'));
 $('precClose').onclick = closePrec;
@@ -1374,7 +1450,7 @@ document.addEventListener('keydown', e=>{
 });
 
 renderAll();
-{ const m = /#r=([^&]+)/.exec(location.hash); const sc = m && scoreFromCode(decodeURIComponent(m[1])); if(sc){ R.sc = sc; if(sc.bpm) setBpm(sc.bpm); openScore(); $('scoreSub').textContent = 'Ritmo compartido. Dale a play para practicarlo con el metrónomo, o a Escribir para grabar el tuyo.'; } }
+{ const m = /#r=([^&]+)/.exec(location.hash); const sc = m && scoreFromCode(decodeURIComponent(m[1])); if(sc){ R.sc = sc; if(sc.bpm) setBpm(sc.bpm); openScore(); $('scoreSub').textContent = 'Ritmo compartido. Dale a Escuchar para oírlo, o a Escribir para grabar el tuyo.'; } }
 requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('is-loading')));
 renderPrecSetup();
 }
