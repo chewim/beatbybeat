@@ -80,5 +80,8 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.counter`: el número de compás. En silencio se congela en gris.
 - `.sweep`: pista de tiempo bajo la cuenta, como un circuito: una sola forma (`.sweep__track`) del borde izquierdo de la cuenta al final del compás. El 1 es la línea de salida y meta a cuadros (`.sweep__flag`); los demás tiempos, líneas de sector (`.sweep__line`); las subdivisiones, pianos en los bordes (`.sweep__kerb`). El sector del tiempo actual se ilumina y su línea se enciende en acento. El punto corre a velocidad constante del 1 al 1 siguiente. En silencio gana intensidad (`--heat`).
 
+### Partitura (`.score-ctl`, `.notation`, `.bar`, `.counts`)
+Panel bajo los números, como Precisión. Un compás por tarjeta en pozo (`--db-well`); el compás que se está escribiendo lleva filo `--db-late`. Pentagrama de una línea en `--db-text`. Debajo, la cuenta del bailarín ("1 e & a"): golpe = fondo `--db-accent`; acento = anillo `--db-late`. El botón Escribir usa `.rec`: punto que late en `--db-late` mientras graba. No usar la notación como decoración en otras pantallas.
+
 ## Estados del ejercicio
 idle · entrada · sonando · silencio. En silencio los números se apagan, pero la barra de tiempo, el contador y el bloque siguen avanzando: es la guía a la que agarrarse sin sonido. El último compás avisa con una cuenta atrás.
