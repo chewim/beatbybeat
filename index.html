@@ -222,7 +222,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .counts span.is-hit{color:var(--db-on-accent);background:var(--db-accent);font-weight:700}
 .counts span.is-acc{box-shadow:0 0 0 1.5px var(--db-late)}
 .counts span.is-play{outline:2px solid var(--db-text);outline-offset:1px}
-.listen{display:inline-flex;align-items:center;gap:var(--db-s-2)}
+.score-ctl__main{display:flex;gap:var(--db-s-2)}
+.listen[hidden]{display:none}
+.listen{display:inline-flex;font-weight:600;color:var(--db-text);align-items:center;gap:var(--db-s-2)}
 .listen[aria-pressed=true]{border-color:var(--db-accent);color:var(--db-accent)}
 
 /* Contador de compases */
@@ -416,12 +418,12 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
         <button class="btn btn--icon" id="scoreClose" aria-label="Cerrar partitura"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
       </div>
       <div class="score-ctl">
-        <button class="btn rec" id="recBtn" aria-pressed="false"><i class="rec__dot"></i><span id="recLbl">Escribir</span></button>
+        <div class="score-ctl__main"><button class="btn rec" id="recBtn" aria-pressed="false"><i class="rec__dot"></i><span id="recLbl">Escribir</span></button>
+        <button class="btn listen" id="scorePlay" aria-pressed="false" hidden><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="scorePlayIco" d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg><span id="scorePlayLbl">Reproducir</span></button></div>
         <div class="mini"><span class="lbl">Compases</span><div class="seg" id="segScoreBars"><button data-v="4">4</button><button data-v="8">8</button><button data-v="16">16</button><button data-v="0">Libre</button></div></div>
         <div class="mini"><span class="lbl">Preparación</span><div class="seg" id="segScorePrep"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="4">4</button></div></div>
         <span class="lbl score-ctl__state" id="recState"></span>
         <div class="score-ctl__share">
-          <button class="btn listen" id="scorePlay" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="scorePlayIco" d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg><span id="scorePlayLbl">Escuchar</span></button>
           <button class="btn" id="scoreLink">Copiar enlace</button>
           <button class="btn" id="scorePng">Descargar imagen</button>
           <button class="btn" id="scoreClear">Borrar</button>
@@ -1123,6 +1125,7 @@ function renderScore(){
   const sc = R.sc || newScore(), r = sc.res, nb = sc.beats;
   $('recBtn').setAttribute('aria-pressed', !!sc.rec);
   $('recLbl').textContent = sc.rec ? 'Parar' : (Object.keys(sc.hits).length ? 'Volver a escribir' : 'Escribir');
+  $('scorePlay').hidden = sc.rec || !Object.keys(sc.hits).length;
   document.querySelectorAll('#segScoreBars button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scoreBars));
   document.querySelectorAll('#segScorePrep button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scorePrep));
   const cur = sc.rec && sc.start!=null && R.shownBar!=null ? R.shownBar - sc.start : -1;
@@ -1247,7 +1250,7 @@ function stopListen(){
 function renderListen(){
   const on = !!R.pb;
   $('scorePlay').setAttribute('aria-pressed', on);
-  $('scorePlayLbl').textContent = on ? 'Parar' : 'Escuchar';
+  $('scorePlayLbl').textContent = on ? 'Parar' : 'Reproducir';
   $('scorePlayIco').setAttribute('d', on ? 'M2 2h8v8H2z' : 'M3 1.5v9l7.5-4.5z');
 }
 
@@ -1450,7 +1453,7 @@ document.addEventListener('keydown', e=>{
 });
 
 renderAll();
-{ const m = /#r=([^&]+)/.exec(location.hash); const sc = m && scoreFromCode(decodeURIComponent(m[1])); if(sc){ R.sc = sc; if(sc.bpm) setBpm(sc.bpm); openScore(); $('scoreSub').textContent = 'Ritmo compartido. Dale a Escuchar para oírlo, o a Escribir para grabar el tuyo.'; } }
+{ const m = /#r=([^&]+)/.exec(location.hash); const sc = m && scoreFromCode(decodeURIComponent(m[1])); if(sc){ R.sc = sc; if(sc.bpm) setBpm(sc.bpm); openScore(); $('scoreSub').textContent = 'Ritmo compartido. Dale a Reproducir para oírlo, o a Escribir para grabar el tuyo.'; } }
 requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('is-loading')));
 renderPrecSetup();
 }
