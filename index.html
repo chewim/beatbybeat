@@ -224,6 +224,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .counts span.is-ghost{opacity:.55}
 .counts span.is-acc{box-shadow:0 0 0 1.5px var(--db-late)}
 .counts span.is-play{outline:2px solid var(--db-text);outline-offset:1px}
+.tex{cursor:pointer;gap:var(--db-s-2)}
+.tex input{accent-color:var(--db-accent);width:16px;height:16px;margin:0}
 .score-ctl__main{display:flex;gap:var(--db-s-2)}
 .listen[hidden]{display:none}
 .listen{display:inline-flex;font-weight:600;color:var(--db-text);align-items:center;gap:var(--db-s-2)}
@@ -423,6 +425,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
         <div class="score-ctl__main"><button class="btn rec" id="recBtn" aria-pressed="false"><i class="rec__dot"></i><span id="recLbl">Escribir</span></button>
         <button class="btn listen" id="scorePlay" aria-pressed="false" hidden><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path id="scorePlayIco" d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg><span id="scorePlayLbl">Reproducir</span></button></div>
         <div class="mini"><span class="lbl">Compases</span><div class="seg" id="segScoreBars"><button data-v="4">4</button><button data-v="8">8</button><button data-v="16">16</button><button data-v="0">Libre</button></div></div>
+        <label class="mini tex"><input type="checkbox" id="scoreTex"><span class="lbl">Textura</span></label>
         <div class="mini"><span class="lbl">Preparación</span><div class="seg" id="segScorePrep"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="4">4</button></div></div>
         <span class="lbl score-ctl__state" id="recState"></span>
         <div class="score-ctl__share">
@@ -582,7 +585,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:8, scorePrep:2, sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:8, scorePrep:2, scoreTex:false, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
             barStart:null, centers:[], landing:null, rounds:[], marks:[], sc:null, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
@@ -1072,6 +1075,11 @@ function scoreHit(t, a, b){
 /* Textura: cada golpe se clasifica dentro de la propia grabación.
    Tono: agudo (punta, brillante) / grave (talón, planta) según el reparto del brillo; si no hay dos grupos claros, todo medio.
    Dinámica: suave (fantasma) / normal / acento según la fuerza respecto a la mediana. */
+function scoreView(sc){
+  const c = scoreCls(sc); if(S.scoreTex) return c;
+  const o = {}; for(const k in c) o[k] = { tone:'mid', dyn: c[k].dyn===2 ? 2 : 1, vel: c[k].dyn===2 ? 1.6 : .9 };
+  return o;
+}
 function scoreCls(sc){
   if(sc.cls) return sc.cls;
   if(sc.fixed) return (sc.cls = sc.fixed);
@@ -1159,12 +1167,14 @@ function renderScore(){
   $('scorePlay').hidden = sc.rec || !Object.keys(sc.hits).length;
   document.querySelectorAll('#segScoreBars button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scoreBars));
   document.querySelectorAll('#segScorePrep button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scorePrep));
+  $('scoreTex').checked = !!S.scoreTex;
   const cur = sc.rec && sc.start!=null && R.shownBar!=null ? R.shownBar - sc.start : -1;
   const total = scoreShownBars(sc, cur);
   $('recState').textContent = !sc.rec ? (Object.keys(sc.hits).length ? `${total} compases` : '') : cur < 0 ? `Prepárate · ${-cur} ${-cur===1?'compás':'compases'} con metrónomo`
     : isFinite(sc.bars) ? `Escribiendo compás ${Math.min(cur+1, sc.bars)} de ${sc.bars}` : `Escribiendo compás ${cur+1} · Parar cuando acabes`;
   $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Antes de escribir suenan los compases de preparación con metrónomo; después se calla (salvo con auriculares) y te guían la cuenta y la pista. En Libre escribe hasta que pulses Parar.'
-    : 'Línea de arriba: agudo (punta) · centro: un solo timbre · abajo: grave (talón, planta). > acento · gris: golpe suave. Celda clara agudo, oscura grave.';
+    : S.scoreTex ? 'Textura: arriba agudo (punta) · centro un solo timbre · abajo grave (talón, planta). > acento · gris: golpe suave.'
+    : 'Semicorcheas como resolución (tresillos si eliges tresillos o swing). > acento. Activa Textura para ver graves, agudos y golpes suaves.';
   const per = Math.min(total, window.innerWidth < 760 ? 1 : 4);
   const box = $('notation'); box.style.setProperty('--per', per);
   if(!window.Vex){ box.innerHTML = '<p class="hint">Cargando notación…</p>'; loadVexflow().then(renderScore).catch(()=>{ box.innerHTML = '<p class="hint">No se ha podido cargar la notación. Revisa la conexión.</p>'; }); return; }
@@ -1176,7 +1186,8 @@ function renderScore(){
     if(!el){ el = document.createElement('div'); el.className = 'bar'; box.appendChild(el); }
     el.classList.toggle('is-cur', b===cur);
     let sig = `${nb}|${r}|${b===0}|`;
-    const cls = scoreCls(sc);
+    const cls = scoreView(sc);
+    sig += S.scoreTex ? 'T' : 'P';
     for(let i=0;i<nb*r;i++){ const key = b*nb*r + i, c = cls[key]; sig += sc.hits[key] && c ? c.tone + c.dyn : '.'; }
     const W = Math.max(160, el.clientWidth - 16);
     sig += '|' + Math.round(W/8);
@@ -1192,19 +1203,20 @@ function renderScore(){
 function drawBar(el, sc, b, W){
   const css = getComputedStyle(document.documentElement), VF = Vex.Flow, r = sc.res, nb = sc.beats, ink = css.getPropertyValue('--db-text').trim() || '#EDEDEF', dim = css.getPropertyValue('--db-text-3').trim() || ink;
   let counts = '';
-  const cls = scoreCls(sc);
+  const cls = scoreView(sc);
   for(let bt=0;bt<nb;bt++) for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k, c = sc.hits[key] && cls[key]; counts += `<span class="${k===0?'is-beat ':''}${c?'is-hit is-'+c.tone+' ':''}${c&&c.dyn===2?'is-acc ':''}${c&&c.dyn===0?'is-ghost':''}">${k===0 ? bt+1 : COUNT_LBL[r][k]}</span>`; }
   el.innerHTML = `<span class="bar__n">${b+1}${b===0 ? ` · ${nb}/4 · ${sc.bpm || S.bpm} BPM` : ''}</span><div class="bar__svg"></div><div class="counts" style="--slots:${nb*r}">${counts}</div>`;
   const ren = new VF.Renderer(el.querySelector('.bar__svg'), VF.Renderer.Backends.SVG); ren.resize(W, 132);
   const ctx = ren.getContext(); ctx.setFillStyle(ink); ctx.setStrokeStyle(ink);
-  const st = new VF.Stave(0, 22, W - 2, { num_lines:3, left_bar:b===0, right_bar:true, space_above_staff_ln:2.2, spacing_between_lines_px:13 });
+  const st = S.scoreTex ? new VF.Stave(0, 22, W - 2, { num_lines:3, left_bar:b===0, right_bar:true, space_above_staff_ln:2.2, spacing_between_lines_px:13 })
+    : new VF.Stave(0, 30, W - 2, { num_lines:1, left_bar:b===0, right_bar:true, space_above_staff_ln:3 });
   st.setContext(ctx).draw();
   const notes = [], beams = [], tuplets = [];
   for(let bt=0;bt<nb;bt++){
     const slots = Array.from({length:r}, (_,k)=>!!sc.hits[b*nb*r + bt*r + k]);
     const group = beatToNotes(slots, r).map(n=>{
       const c = n.hit ? cls[b*nb*r + bt*r + n.i] : null;
-      const sn = new VF.StaveNote({ keys:[!c ? 'd/5' : c.tone==='hi' ? 'f/5' : c.tone==='lo' ? 'b/4' : 'd/5'], duration:n.d, stem_direction:1 });
+      const sn = new VF.StaveNote({ keys:[!S.scoreTex ? 'f/5' : !c ? 'd/5' : c.tone==='hi' ? 'f/5' : c.tone==='lo' ? 'b/4' : 'd/5'], duration:n.d, stem_direction:1 });
       if(c && c.dyn===2) sn.addModifier(new VF.Articulation('a>').setPosition(3), 0);
       if(c && c.dyn===0) sn.setStyle({ fillStyle:dim, strokeStyle:dim });
       if(n.d.endsWith('d') || n.d === '8dr') VF.Dot.buildAndAttach([sn], { all:true });
@@ -1221,7 +1233,20 @@ function drawBar(el, sc, b, W){
   tuplets.forEach(tp=>tp.setContext(ctx).draw());
 }
 /* Escuchar lo grabado: un compás de entrada y la frase en bucle, con golpe de claqué sintetizado y metrónomo suave */
+function tapPlain(t, accent){
+  const n = Math.floor(ctx.sampleRate * .05), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, 6);
+  const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+  src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 1.4;
+  g.gain.value = accent ? 1.6 : .9;
+  src.connect(bp).connect(g).connect(ctx.destination); src.start(t);
+  const o = ctx.createOscillator(), og = ctx.createGain();
+  o.frequency.setValueAtTime(accent ? 240 : 190, t); o.frequency.exponentialRampToValueAtTime(70, t+.05);
+  og.gain.setValueAtTime(accent ? .5 : .3, t); og.gain.exponentialRampToValueAtTime(.0001, t+.06);
+  o.connect(og).connect(ctx.destination); o.start(t); o.stop(t+.07);
+}
 function tap(t, c){
+  if(!S.scoreTex) return tapPlain(t, c && c.dyn===2);
   const tone = c ? c.tone : 'mid', vel = c ? (c.vel ?? [.4, .9, 1.6][c.dyn]) : 1;
   const P = { hi:{ f:5200, q:1.8, body:0, nd:.035 }, mid:{ f:3000, q:1.3, body:.35, nd:.05 }, lo:{ f:1100, q:.9, body:.9, nd:.07 } }[tone];
   const n = Math.floor(ctx.sampleRate * P.nd), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
@@ -1246,7 +1271,7 @@ function pbTick(){
       const tb = pb.next + bt*bd;
       click(tb, bt===0 ? 'acc' : 'beat', b < 0 ? .7 : .28);
       if(b < 0) continue;
-      const cls = scoreCls(sc);
+      const cls = scoreView(sc);
       for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; if(sc.hits[key]) tap(tb + k/r*bd, cls[key]); }
     }
     pb.marks.push({ t: pb.next, bar: b });
@@ -1461,6 +1486,7 @@ $('scoreClose').onclick = closeScore;
 $('recBtn').onclick = ()=> (R.sc && R.sc.rec) ? stopRec() : startRec();
 document.querySelectorAll('#segScoreBars button').forEach(b=>b.onclick = ()=>{ S.scoreBars = +b.dataset.v; save(); if(!(R.sc && R.sc.rec)){ R.sc = R.sc && Object.keys(R.sc.hits).length ? R.sc : null; } renderScore(); });
 document.querySelectorAll('#segScorePrep button').forEach(b=>b.onclick = ()=>{ S.scorePrep = +b.dataset.v; save(); renderScore(); });
+$('scoreTex').onchange = e=>{ S.scoreTex = e.target.checked; save(); renderScore(); };
 $('scoreClear').onclick = ()=>{ stopListen(); R.sc = null; $('notation').innerHTML = ''; renderScore(); };
 $('scoreLink').onclick = copyScoreLink;
 $('scorePlay').onclick = ()=> R.pb ? stopListen() : startListen();
