@@ -179,6 +179,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* Medición en marcha y veredicto de cada ronda (gamificado, sin chillar) */
 .live{position:absolute;top:var(--db-s-2);left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:var(--db-s-2);padding:var(--db-s-1) var(--db-s-3);border-radius:var(--db-radius-ctl);border:1px solid color-mix(in srgb, var(--db-late) 55%, transparent);background:color-mix(in srgb, var(--db-late) 10%, var(--db-bg));color:var(--db-late);font-size:var(--db-fs-2);font-weight:600;z-index:2}
 .live__dot{width:8px;height:8px;border-radius:50%;background:var(--db-late);animation:db-pulse 1s ease-in-out infinite}
+.live--prep{border-color:color-mix(in srgb, var(--db-accent) 55%, transparent);background:color-mix(in srgb, var(--db-accent) 10%, var(--db-bg));color:var(--db-accent)}
+.live--prep .live__dot{background:var(--db-accent)}
 @keyframes db-pulse{50%{opacity:.25}}
 .verdict{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;display:flex;flex-direction:column;align-items:center;gap:var(--db-s-1);padding:var(--db-s-5) var(--db-s-6);min-width:min(420px,90%);border-radius:var(--db-radius-card);border:1px solid var(--db-line-strong);background:var(--db-grad-surface);box-shadow:var(--db-edge), 0 24px 60px -12px color-mix(in srgb, var(--db-dark) 85%, transparent);animation:db-pop .35s cubic-bezier(.2,1.4,.4,1)}
 @keyframes db-pop{from{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
@@ -391,7 +393,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   </header>
 
   <main class="stage" id="stage" aria-label="Cuenta">
-    <div class="live" id="live" hidden><i class="live__dot"></i>Midiendo tus golpes</div>
+    <div class="live" id="live" hidden><i class="live__dot"></i><span id="liveTxt">Midiendo tus golpes</span></div>
     <div class="verdict" id="verdict" hidden aria-live="polite"><span class="verdict__score num" id="vScore"></span><span class="verdict__lbl" id="vLbl"></span><span class="verdict__msg" id="vMsg"></span></div>
     <div class="intro" id="intro" hidden aria-live="assertive">
       <span class="intro__lbl">Entrada</span>
@@ -413,6 +415,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
       <div class="score-ctl">
         <button class="btn rec" id="recBtn" aria-pressed="false"><i class="rec__dot"></i><span id="recLbl">Escribir</span></button>
         <div class="mini"><span class="lbl">Compases</span><div class="seg" id="segScoreBars"><button data-v="4">4</button><button data-v="8">8</button><button data-v="16">16</button><button data-v="0">Libre</button></div></div>
+        <div class="mini"><span class="lbl">Preparación</span><div class="seg" id="segScorePrep"><button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="4">4</button></div></div>
         <span class="lbl score-ctl__state" id="recState"></span>
         <div class="score-ctl__share">
           <button class="btn" id="scoreLink">Copiar enlace</button>
@@ -571,7 +574,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:8, sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:8, scorePrep:2, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
             barStart:null, centers:[], landing:null, rounds:[], marks:[], sc:null, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
@@ -689,7 +692,7 @@ function scheduleBeat(){
     if(!ci) R.grid.push(ev);
     if(sil){ if(k===0 && S.anchors[R.beat]) click(t, 'beat', .45); continue; }
     if(ci){ if(k===0) click(t, R.beat===0 ? 'acc' : 'beat', .8); continue; }
-    if(R.sc && R.sc.rec && !S.phones) continue; /* escribiendo: el micro oiría el clic; guían la cuenta y la pista */
+    if(R.sc && R.sc.rec && R.sc.start!=null && R.bar >= R.sc.start && !S.phones) continue; /* escribiendo: el micro oiría el clic; guían la cuenta y la pista */
     /* Vuelta del silencio: el 1 suena un poco más fuerte para que la entrada sea inequívoca */
     const back = !k && R.beat===0 && isSilent(R.bar-1);
     click(t, k ? 'sub' : (R.beat===0 ? 'acc' : 'beat'), back ? 1.3 : 1);
@@ -800,7 +803,17 @@ function showVerdict(g){
   v.hidden = false; v.style.animation = 'none'; void v.offsetWidth; v.style.animation = '';
   clearTimeout(R.vTO); R.vTO = setTimeout(()=>v.hidden = true, 2600);
 }
-function renderLive(){ $('live').hidden = !(R.mic && R.playing && R.shownBar!=null && R.shownBar>=0 && (R.shownSilent || S.phones)); }
+function renderLive(){
+  const sc = R.sc;
+  if(sc && sc.rec && R.playing && sc.start!=null){
+    const left = R.shownBar==null ? sc.start + 1 : sc.start - R.shownBar;
+    $('liveTxt').textContent = left > 1 ? `Prepárate · escribo en ${left} compases` : left === 1 ? 'Prepárate · escribo en el próximo 1' : 'Escribiendo tu ritmo';
+    $('live').classList.toggle('live--prep', left > 0);
+    $('live').hidden = false; return;
+  }
+  $('live').classList.remove('live--prep'); $('liveTxt').textContent = 'Midiendo tus golpes';
+  $('live').hidden = !(R.mic && R.playing && R.shownBar!=null && R.shownBar>=0 && (R.shownSilent || S.phones));
+}
 function closeSection(){
   const st = stats(R.sectionHits); R.sectionHits=[];
   R.landing = null;
@@ -1054,7 +1067,8 @@ function startRec(){
   if(!R.mic){ micOn().then(()=>{ renderMic(); renderPrecSetup(); renderScore(); }); }
   if(!R.playing) start();
   /* Empieza a escribir en el siguiente compás completo */
-  R.sc.start = Math.max(0, R.bar + (R.beat > 0 ? 1 : 0));
+  /* Compases de preparación con metrónomo antes de escribir */
+  R.sc.start = Math.max(0, R.bar + (R.beat > 0 ? 1 : 0)) + S.scorePrep;
   renderScore();
 }
 function stopRec(){
@@ -1103,11 +1117,12 @@ function renderScore(){
   $('recBtn').setAttribute('aria-pressed', !!sc.rec);
   $('recLbl').textContent = sc.rec ? 'Parar' : (Object.keys(sc.hits).length ? 'Volver a escribir' : 'Escribir');
   document.querySelectorAll('#segScoreBars button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scoreBars));
+  document.querySelectorAll('#segScorePrep button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scorePrep));
   const cur = sc.rec && sc.start!=null && R.shownBar!=null ? R.shownBar - sc.start : -1;
   const total = scoreShownBars(sc, cur);
-  $('recState').textContent = !sc.rec ? (Object.keys(sc.hits).length ? `${total} compases` : '') : cur < 0 ? 'Prepárate…'
+  $('recState').textContent = !sc.rec ? (Object.keys(sc.hits).length ? `${total} compases` : '') : cur < 0 ? `Prepárate · ${-cur} ${-cur===1?'compás':'compases'} con metrónomo`
     : isFinite(sc.bars) ? `Escribiendo compás ${Math.min(cur+1, sc.bars)} de ${sc.bars}` : `Escribiendo compás ${cur+1} · Parar cuando acabes`;
-  $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Mientras escribe, el metrónomo se calla (salvo con auriculares) y te guían la cuenta y la pista. En Libre escribe hasta que pulses Parar.'
+  $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Antes de escribir suenan los compases de preparación con metrónomo; después se calla (salvo con auriculares) y te guían la cuenta y la pista. En Libre escribe hasta que pulses Parar.'
     : 'Semicorcheas como resolución (tresillos si eliges tresillos o swing). Los golpes más fuertes salen con acento.';
   const per = Math.min(total, window.innerWidth < 760 ? 1 : 4);
   const box = $('notation'); box.style.setProperty('--per', per);
@@ -1320,6 +1335,7 @@ $('scoreBtn').onclick = ()=> $('score').hidden ? openScore() : closeScore();
 $('scoreClose').onclick = closeScore;
 $('recBtn').onclick = ()=> (R.sc && R.sc.rec) ? stopRec() : startRec();
 document.querySelectorAll('#segScoreBars button').forEach(b=>b.onclick = ()=>{ S.scoreBars = +b.dataset.v; save(); if(!(R.sc && R.sc.rec)){ R.sc = R.sc && Object.keys(R.sc.hits).length ? R.sc : null; } renderScore(); });
+document.querySelectorAll('#segScorePrep button').forEach(b=>b.onclick = ()=>{ S.scorePrep = +b.dataset.v; save(); renderScore(); });
 $('scoreClear').onclick = ()=>{ R.sc = null; $('notation').innerHTML = ''; renderScore(); };
 $('scoreLink').onclick = copyScoreLink;
 $('scorePng').onclick = downloadScorePng;
