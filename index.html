@@ -498,6 +498,13 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
   </div>
 
   <div class="field">
+    <div class="field__h"><h3 class="h">Sincronía con el altavoz</h3><output class="num lbl" id="oAv"></output></div>
+    <p class="hint">Con Bluetooth el sonido llega tarde respecto a la pantalla. Dale a play y mueve el control hasta que el número se encienda justo cuando oyes el clic.</p>
+    <input type="range" id="avDelay" min="0" max="400" step="5" aria-label="Retraso del altavoz en milisegundos" />
+    <div class="field__h"><span class="lbl" id="avHint"></span><button class="btn" id="avFromCal">Usar calibración</button></div>
+  </div>
+
+  <div class="field">
     <h3 class="h">Tema</h3>
     <div class="seg" id="segTheme"><button data-v="escenario">Escenario</button><button data-v="estudio">Estudio</button></div>
     <p class="hint">Estudio es claro: mejor en salas con mucha luz.</p>
@@ -510,7 +517,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
             barStart:null, centers:[], landing:null, rounds:[], marks:[], stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
@@ -643,7 +650,7 @@ function reanchor(){ if(R.playing){ R.stopAnchor = Math.max(0, R.bar+1); renderB
 /* ===================== Bucle visual ===================== */
 function loop(){
   if(!R.playing) return;
-  const now = heardNow();
+  const now = heardNow() - (S.av || 0)/1000; /* la pantalla espera lo que tarda el altavoz */
   let ev = null;
   while(R.events.length && R.events[0].t <= now) ev = R.events.shift();
   if(ev) show(ev);
@@ -928,6 +935,10 @@ function renderSheet(){
     : `Suenan bajito ${on.join(' y ')}. Ve quitándolos a medida que ganes precisión.`;
   $('swCi').setAttribute('aria-pressed', S.countIn);
   $('sens').value = S.sens;
+  $('avDelay').value = S.av; $('oAv').textContent = S.av ? `${S.av} ms` : 'sin retraso';
+  $('avDelay').style.setProperty('--p', (S.av/400*100)+'%');
+  $('avFromCal').hidden = S.rt==null;
+  $('avHint').textContent = S.rt!=null ? `El micro midió ${Math.round(S.rt*1000)} ms de ida y vuelta.` : 'Calibra en Precisión para tener una referencia.';
   renderMic();
 }
 function renderMic(){
@@ -1064,6 +1075,9 @@ $('segAnchors').onclick = e=>{ const b = e.target.closest('button'); if(!b) retu
   const i = +b.dataset.i; S.anchors[i] = !S.anchors[i]; save(); renderSheet(); };
 $('swCi').onclick = ()=>{ S.countIn = !S.countIn; save(); renderSheet(); };
 $('sens').oninput = e=>{ S.sens = +e.target.value; save(); renderMic(); };
+$('avDelay').oninput = e=>{ S.av = +e.target.value; save(); renderSheet(); };
+/* La calibración mide altavoz + micro; el micro del portátil añade unos 10 ms, el resto es el altavoz */
+$('avFromCal').onclick = ()=>{ if(S.rt==null) return; S.av = Math.max(0, Math.min(400, Math.round((S.rt*1000 - 10)/5)*5)); save(); renderSheet(); };
 $('calib').onclick = calibrate;
 
 document.addEventListener('keydown', e=>{

@@ -75,6 +75,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - `.verdict`: al volver el sonido tras un silencio medido, tarjeta grande en el centro con la puntuación (0-100), una etiqueta (¡Clavado!, Muy bien, Bien, Casi, Flojo, Muy mal) y el detalle ("Te faltaron 38 ms: te adelantas"). Se va sola a los 2,6 s.
 - `.score` + `.round`: en el panel de precisión, la última ronda en grande y el historial de rondas.
 - `.info`: botón `+` (gira a ×) que despliega qué significa cada cifra (`.stat__def`).
+- Ajustes → Sincronía con el altavoz (`S.av`, 0-400 ms): la pantalla espera lo que tarda el altavoz en sonar (Bluetooth). "Usar calibración" toma la medida del micro menos ~10 ms del propio micro.
 - `.hitdot`: punto que se enciende con cada golpe detectado por el micro, para ajustar la sensibilidad.
 - `.counter`: el número de compás. En silencio se congela en gris.
 - `.sweep`: barra de tiempo bajo la cuenta, fragmentada en un segmento por tiempo (`.sweep__seg`) con hueco entre ellos. Cada segmento arranca con una muesca alta bajo su número: la del 1 es la más alta, ancha y clara (el punto fuerte); la del tiempo actual se enciende en acento. Dentro, marcas de subdivisión (`.sweep__sub`): una en corcheas, dos en tresillos, tres en cuatrillos, desplazada en swing. El relleno avanza a velocidad constante. En silencio es la guía: gana intensidad (grosor, calor y brillo vía `--heat`) hasta que vuelve el sonido.
