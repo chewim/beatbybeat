@@ -78,7 +78,7 @@ Regla del 8 con medio paso de 4 (`--db-s-1` a `--db-s-5`); 1-2 px solo para ajus
 - Ajustes → Sincronía con el altavoz (`S.av`, 0-400 ms): la pantalla espera lo que tarda el altavoz en sonar (Bluetooth). "Usar calibración" toma la medida del micro menos ~10 ms del propio micro.
 - `.hitdot`: punto que se enciende con cada golpe detectado por el micro, para ajustar la sensibilidad.
 - `.counter`: el número de compás. En silencio se congela en gris.
-- `.sweep`: barra de tiempo bajo la cuenta, fragmentada en un segmento por tiempo (`.sweep__seg`) con hueco entre ellos. Cada segmento arranca con una muesca alta bajo su número: la del 1 es la más alta, ancha y clara (el punto fuerte); la del tiempo actual se enciende en acento. Dentro, marcas de subdivisión (`.sweep__sub`): una en corcheas, dos en tresillos, tres en cuatrillos, desplazada en swing. El relleno avanza a velocidad constante. En silencio es la guía: gana intensidad (grosor, calor y brillo vía `--heat`) hasta que vuelve el sonido.
+- `.sweep`: pista de tiempo bajo la cuenta, como un circuito: una sola forma (`.sweep__track`) del borde izquierdo de la cuenta al final del compás. El 1 es la línea de salida y meta a cuadros (`.sweep__flag`); los demás tiempos, líneas de sector (`.sweep__line`); las subdivisiones, pianos en los bordes (`.sweep__kerb`). El sector del tiempo actual se ilumina y su línea se enciende en acento. El punto corre a velocidad constante del 1 al 1 siguiente. En silencio gana intensidad (`--heat`).
 
 ## Estados del ejercicio
 idle · entrada · sonando · silencio. En silencio los números se apagan, pero la barra de tiempo, el contador y el bloque siguen avanzando: es la guía a la que agarrarse sin sonido. El último compás avisa con una cuenta atrás.

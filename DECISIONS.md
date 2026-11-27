@@ -28,3 +28,4 @@
 - 2026-11-26 · El panel de precisión pasa de overlay a panel bajo los números. · Por qué: interactúa con la cuenta; no tiene sentido taparla (David).
 - 2026-11-27 · Ajuste "Sincronía con el altavoz" (retraso de la pantalla, 0-400 ms) con atajo desde la calibración del micro. · Por qué: con Bluetooth la calibración dio 150 ms; sin compensarlo la pantalla va por delante del sonido.
 - 2026-11-27 · Señal de mantenimiento a -40 dB (antes -68 dB) y clic algo más largo (70 ms). · Por qué: con el altavoz Bluetooth SPC de David los clics cortos no sonaban; sonaban con la señal más fuerte.
+- 2026-11-27 · La barra fragmentada pasa a pista única tipo circuito (salida a cuadros en el 1, líneas de sector, pianos en las subdivisiones) que empieza en el borde de la cuenta. · Por qué: los segmentos despistaban y la barra parecía cortada (David).
