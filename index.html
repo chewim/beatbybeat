@@ -208,7 +208,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .rec__dot{width:12px;height:12px;border-radius:50%;background:var(--db-late)}
 .rec[aria-pressed=true]{border-color:var(--db-late);color:var(--db-late);box-shadow:var(--db-edge), 0 0 18px -4px color-mix(in srgb, var(--db-late) 55%, transparent)}
 .rec[aria-pressed=true] .rec__dot{animation:db-pulse 1s ease-in-out infinite}
-.notation{display:grid;grid-template-columns:repeat(var(--per,4),minmax(0,1fr));gap:var(--db-s-3)}
+.notation{display:grid;grid-template-columns:repeat(var(--per,4),minmax(0,1fr));gap:var(--db-s-3);max-height:min(60vh, 520px);overflow-y:auto;overscroll-behavior:contain}
 .bar{position:relative;padding:var(--db-s-3) var(--db-s-2) var(--db-s-2);border-radius:var(--db-radius-ctl);background:var(--db-bg);box-shadow:var(--db-well);min-height:150px}
 .bar.is-cur{box-shadow:var(--db-well), inset 0 0 0 1.5px color-mix(in srgb, var(--db-late) 60%, transparent)}
 .bar__n{position:absolute;top:var(--db-s-2);left:var(--db-s-3);font-size:var(--db-fs-1);color:var(--db-text-2)}
@@ -412,7 +412,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
       </div>
       <div class="score-ctl">
         <button class="btn rec" id="recBtn" aria-pressed="false"><i class="rec__dot"></i><span id="recLbl">Escribir</span></button>
-        <div class="mini"><span class="lbl">Compases</span><div class="seg" id="segScoreBars"><button data-v="2">2</button><button data-v="4">4</button><button data-v="8">8</button></div></div>
+        <div class="mini"><span class="lbl">Compases</span><div class="seg" id="segScoreBars"><button data-v="4">4</button><button data-v="8">8</button><button data-v="16">16</button><button data-v="0">Libre</button></div></div>
         <span class="lbl score-ctl__state" id="recState"></span>
         <div class="score-ctl__share">
           <button class="btn" id="scoreLink">Copiar enlace</button>
@@ -571,7 +571,7 @@ input[type=range]::-webkit-slider-thumb{box-shadow:var(--db-edge), var(--db-drop
 <script>
 {
 /* ===================== Estado ===================== */
-const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:4, sens:50, rt:null, theme:'escenario', anchors:[] };
+const DEF = { bpm:100, beats:4, feel:'straight', block:8, stopOn:false, sound:4, silent:4, countIn:true, mic:false, phones:false, av:0, scoreBars:8, sens:50, rt:null, theme:'escenario', anchors:[] };
 const S = Object.assign({}, DEF, load());
 const R = { playing:false, bar:0, beat:0, nextBeat:0, timer:null, grid:[], events:[], shownBar:null, shownSilent:false,
             barStart:null, centers:[], landing:null, rounds:[], marks:[], sc:null, stopAnchor:0, hits:[], sectionHits:[], lastResult:null, taps:[], mic:null, calib:null, tapTO:null };
@@ -1026,7 +1026,7 @@ function renderMic(){
 /* Resolución: semicorcheas (4 por tiempo); tresillos y swing en rejilla de 3 */
 const scoreRes = () => (S.feel==='triplet' || S.feel==='swing') ? 3 : 4;
 const COUNT_LBL = { 4:['','e','&','a'], 3:['','&','a'] };
-function newScore(){ return { rec:false, start:null, bars:S.scoreBars, beats:S.beats, res:scoreRes(), hits:{}, acc:{}, amps:[] }; }
+function newScore(){ return { rec:false, start:null, bars:S.scoreBars || Infinity, beats:S.beats, res:scoreRes(), hits:{}, acc:{}, amps:[] }; }
 function scoreHit(t, a){
   const sc = R.sc;
   if(!sc || !sc.rec || sc.start==null || !R.playing) return;
@@ -1057,7 +1057,15 @@ function startRec(){
   R.sc.start = Math.max(0, R.bar + (R.beat > 0 ? 1 : 0));
   renderScore();
 }
-function stopRec(){ if(R.sc) R.sc.rec = false; renderScore(); }
+function stopRec(){
+  const sc = R.sc; if(!sc) return;
+  sc.rec = false;
+  if(!isFinite(sc.bars)){ /* Libre: se queda hasta el último compás con golpes */
+    const per = sc.beats*sc.res, last = Object.keys(sc.hits).reduce((m,k)=>Math.max(m, Math.floor(k/per)), -1);
+    sc.bars = Math.max(1, last + 1);
+  }
+  renderScore();
+}
 function renderScoreSoon(){ if(!$('score').hidden && !R.scRaf) R.scRaf = requestAnimationFrame(()=>{ R.scRaf = 0; renderScore(); }); }
 function loadVexflow(){
   if(window.Vex) return Promise.resolve();
@@ -1084,6 +1092,11 @@ function beatToNotes(slots, r){
   }
   return out;
 }
+function scoreShownBars(sc, cur){
+  if(isFinite(sc.bars)) return sc.bars;
+  const per = sc.beats*sc.res, last = Object.keys(sc.hits).reduce((m,k)=>Math.max(m, Math.floor(k/per)), -1);
+  return Math.max(4, last + 1, cur + 1);
+}
 function renderScore(){
   if($('score').hidden) return;
   const sc = R.sc || newScore(), r = sc.res, nb = sc.beats;
@@ -1091,46 +1104,62 @@ function renderScore(){
   $('recLbl').textContent = sc.rec ? 'Parar' : (Object.keys(sc.hits).length ? 'Volver a escribir' : 'Escribir');
   document.querySelectorAll('#segScoreBars button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v === S.scoreBars));
   const cur = sc.rec && sc.start!=null && R.shownBar!=null ? R.shownBar - sc.start : -1;
-  $('recState').textContent = !sc.rec ? '' : cur < 0 ? 'Prepárate…' : `Escribiendo compás ${Math.min(cur+1, sc.bars)} de ${sc.bars}`;
-  $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Mientras escribe, el metrónomo se calla (salvo con auriculares) y te guían la cuenta y la pista.'
+  const total = scoreShownBars(sc, cur);
+  $('recState').textContent = !sc.rec ? (Object.keys(sc.hits).length ? `${total} compases` : '') : cur < 0 ? 'Prepárate…'
+    : isFinite(sc.bars) ? `Escribiendo compás ${Math.min(cur+1, sc.bars)} de ${sc.bars}` : `Escribiendo compás ${cur+1} · Parar cuando acabes`;
+  $('scoreNote').textContent = !R.mic ? 'Al pulsar Escribir se activa el micro. Mientras escribe, el metrónomo se calla (salvo con auriculares) y te guían la cuenta y la pista. En Libre escribe hasta que pulses Parar.'
     : 'Semicorcheas como resolución (tresillos si eliges tresillos o swing). Los golpes más fuertes salen con acento.';
-  const per = Math.min(sc.bars, window.innerWidth < 760 ? 1 : 4);
+  const per = Math.min(total, window.innerWidth < 760 ? 1 : 4);
   const box = $('notation'); box.style.setProperty('--per', per);
   if(!window.Vex){ box.innerHTML = '<p class="hint">Cargando notación…</p>'; loadVexflow().then(renderScore).catch(()=>{ box.innerHTML = '<p class="hint">No se ha podido cargar la notación. Revisa la conexión.</p>'; }); return; }
-  const VF = Vex.Flow, ink = getComputedStyle(document.documentElement).getPropertyValue('--db-text').trim() || '#EDEDEF';
-  let html = '';
-  for(let b=0;b<sc.bars;b++){
-    let counts = '';
-    for(let bt=0;bt<nb;bt++) for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; counts += `<span class="${k===0?'is-beat ':''}${sc.hits[key]?'is-hit ':''}${sc.acc[key]?'is-acc':''}">${k===0 ? bt+1 : COUNT_LBL[r][k]}</span>`; }
-    html += `<div class="bar${b===cur?' is-cur':''}"><span class="bar__n">${b+1}</span><div class="bar__svg" id="vf${b}"></div><div class="counts" style="--slots:${nb*r}">${counts}</div></div>`;
+  if(box.querySelector('.hint')) box.innerHTML = '';
+  /* Solo se redibujan los compases que cambian: una frase larga no frena la escritura */
+  while(box.children.length > total) box.lastChild.remove();
+  for(let b=0;b<total;b++){
+    let el = box.children[b];
+    if(!el){ el = document.createElement('div'); el.className = 'bar'; box.appendChild(el); }
+    el.classList.toggle('is-cur', b===cur);
+    let sig = `${nb}|${r}|${b===0}|`;
+    for(let i=0;i<nb*r;i++){ const key = b*nb*r + i; sig += sc.hits[key] ? (sc.acc[key] ? 'A' : 'x') : '.'; }
+    const W = Math.max(160, el.clientWidth - 16);
+    sig += '|' + Math.round(W/8);
+    if(el.dataset.sig === sig) continue;
+    el.dataset.sig = sig;
+    drawBar(el, sc, b, W);
   }
-  box.innerHTML = html;
-  for(let b=0;b<sc.bars;b++){
-    const el = $('vf'+b), W = Math.max(160, el.clientWidth);
-    const ren = new VF.Renderer(el, VF.Renderer.Backends.SVG); ren.resize(W, 104);
-    const ctx = ren.getContext(); ctx.setFillStyle(ink); ctx.setStrokeStyle(ink);
-    const st = new VF.Stave(0, 18, W - 2, { num_lines:1, left_bar:b===0, right_bar:true, space_above_staff_ln:3 });
-    if(b===0) st.addTimeSignature(`${nb}/4`);
-    st.setContext(ctx).draw();
-    const notes = [], beams = [], tuplets = [];
-    for(let bt=0;bt<nb;bt++){
-      const slots = Array.from({length:r}, (_,k)=>!!sc.hits[b*nb*r + bt*r + k]);
-      const group = beatToNotes(slots, r).map(n=>{
-        const sn = new VF.StaveNote({ keys:['f/5'], duration:n.d, stem_direction:1 });
-        if(n.hit && sc.acc[b*nb*r + bt*r + n.i]) sn.addModifier(new VF.Articulation('a>').setPosition(3), 0);
-        if(n.d.endsWith('d') || n.d === '8dr') VF.Dot.buildAndAttach([sn], { all:true });
-        return sn;
-      });
-      notes.push(...group);
-      if(r===3 && group.length===3) tuplets.push(new VF.Tuplet(group, { num_notes:3, notes_occupied:2, ratioed:false }));
-      try{ beams.push(...VF.Beam.generateBeams(group, { beam_rests:false, stem_direction:1 })); }catch(e){}
-    }
-    const voice = new VF.Voice({ num_beats:nb, beat_value:4 }).setMode(VF.Voice.Mode.SOFT).addTickables(notes);
-    new VF.Formatter().joinVoices([voice]).format([voice], W - (b===0 ? 70 : 30));
-    voice.draw(ctx, st);
-    beams.forEach(bm=>{ try{ bm.setContext(ctx).draw(); }catch(e){} });
-    tuplets.forEach(tp=>tp.setContext(ctx).draw());
+  if(sc.rec && cur >= 0 && box.children[cur]){
+    const c = box.children[cur], top = c.offsetTop - box.offsetTop;
+    if(top < box.scrollTop || top + c.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTo({ top: top - 8, behavior:'smooth' });
   }
+}
+function drawBar(el, sc, b, W){
+  const VF = Vex.Flow, r = sc.res, nb = sc.beats, ink = getComputedStyle(document.documentElement).getPropertyValue('--db-text').trim() || '#EDEDEF';
+  let counts = '';
+  for(let bt=0;bt<nb;bt++) for(let k=0;k<r;k++){ const key = b*nb*r + bt*r + k; counts += `<span class="${k===0?'is-beat ':''}${sc.hits[key]?'is-hit ':''}${sc.acc[key]?'is-acc':''}">${k===0 ? bt+1 : COUNT_LBL[r][k]}</span>`; }
+  el.innerHTML = `<span class="bar__n">${b+1}</span><div class="bar__svg"></div><div class="counts" style="--slots:${nb*r}">${counts}</div>`;
+  const ren = new VF.Renderer(el.querySelector('.bar__svg'), VF.Renderer.Backends.SVG); ren.resize(W, 104);
+  const ctx = ren.getContext(); ctx.setFillStyle(ink); ctx.setStrokeStyle(ink);
+  const st = new VF.Stave(0, 18, W - 2, { num_lines:1, left_bar:b===0, right_bar:true, space_above_staff_ln:3 });
+  if(b===0) st.addTimeSignature(`${nb}/4`);
+  st.setContext(ctx).draw();
+  const notes = [], beams = [], tuplets = [];
+  for(let bt=0;bt<nb;bt++){
+    const slots = Array.from({length:r}, (_,k)=>!!sc.hits[b*nb*r + bt*r + k]);
+    const group = beatToNotes(slots, r).map(n=>{
+      const sn = new VF.StaveNote({ keys:['f/5'], duration:n.d, stem_direction:1 });
+      if(n.hit && sc.acc[b*nb*r + bt*r + n.i]) sn.addModifier(new VF.Articulation('a>').setPosition(3), 0);
+      if(n.d.endsWith('d') || n.d === '8dr') VF.Dot.buildAndAttach([sn], { all:true });
+      return sn;
+    });
+    notes.push(...group);
+    if(r===3 && group.length===3) tuplets.push(new VF.Tuplet(group, { num_notes:3, notes_occupied:2, ratioed:false }));
+    try{ beams.push(...VF.Beam.generateBeams(group, { beam_rests:false, stem_direction:1 })); }catch(e){}
+  }
+  const voice = new VF.Voice({ num_beats:nb, beat_value:4 }).setMode(VF.Voice.Mode.SOFT).addTickables(notes);
+  new VF.Formatter().joinVoices([voice]).format([voice], W - (b===0 ? 70 : 30));
+  voice.draw(ctx, st);
+  beams.forEach(bm=>{ try{ bm.setContext(ctx).draw(); }catch(e){} });
+  tuplets.forEach(tp=>tp.setContext(ctx).draw());
 }
 /* Enlace: el ritmo va dentro del propio enlace (sin servidor) */
 const SHARE_BASE = 'https://chewim.github.io/beatbybeat/';
@@ -1291,7 +1320,7 @@ $('scoreBtn').onclick = ()=> $('score').hidden ? openScore() : closeScore();
 $('scoreClose').onclick = closeScore;
 $('recBtn').onclick = ()=> (R.sc && R.sc.rec) ? stopRec() : startRec();
 document.querySelectorAll('#segScoreBars button').forEach(b=>b.onclick = ()=>{ S.scoreBars = +b.dataset.v; save(); if(!(R.sc && R.sc.rec)){ R.sc = R.sc && Object.keys(R.sc.hits).length ? R.sc : null; } renderScore(); });
-$('scoreClear').onclick = ()=>{ R.sc = null; renderScore(); };
+$('scoreClear').onclick = ()=>{ R.sc = null; $('notation').innerHTML = ''; renderScore(); };
 $('scoreLink').onclick = copyScoreLink;
 $('scorePng').onclick = downloadScorePng;
 new ResizeObserver(()=>{ if(!$('score').hidden) renderScoreSoon(); }).observe(document.getElementById('notation'));
