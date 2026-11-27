@@ -562,9 +562,12 @@ if(navigator.mediaDevices && navigator.mediaDevices.addEventListener){
   navigator.mediaDevices.addEventListener('devicechange', ()=>{
     clearTimeout(R.devTO);
     R.devTO = setTimeout(async ()=>{
-      const sig = await outputsSig();
-      if(sig === R.outSig || R.calib) return;
+      const sig = await outputsSig(), prev = R.outSig || '';
       R.outSig = sig;
+      /* Al dar permiso al micro aparecen los nombres e ids de los dispositivos: la lista "cambia" sin que cambie la salida.
+         Tampoco cuenta nada en los segundos siguientes a activar el micro o mientras se calibra. */
+      const hadNames = prev.split('|').some(x=>x.length > 0);
+      if(sig === prev || R.calib || !hadNames || performance.now() - (R.micAt || 0) < 4000) return;
       if(!ctx) return;
       R.newCtx = true;
       if(R.playing){ stop(); $('status').innerHTML = 'Ha cambiado la salida de audio. <b>Pulsa play</b> para seguir.'; }
@@ -767,6 +770,7 @@ const thrFromSens = s => .6 * Math.pow(.05, s/100);
 async function micOn(){
   audio();
   if(R.mic) return true;
+  R.micAt = performance.now();
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'})));
@@ -781,7 +785,7 @@ async function micOn(){
       flashHit();
       registerHit(d.t - rtLat(), 'mic');
     };
-    R.mic = { stream, node };
+    R.mic = { stream, node }; R.micAt = performance.now();
     return true;
   }catch(err){ R.micError = true; renderPrecSetup(); return false; }
 }
