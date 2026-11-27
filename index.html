@@ -543,6 +543,23 @@ function audio(){
   if(ctx.state==='suspended') ctx.resume();
   return ctx;
 }
+/* Si cambia la salida de audio (conectar o quitar Bluetooth, auriculares…), el contexto puede seguir sonando por la salida
+   anterior. Se rehace el audio en la nueva salida y, si estaba sonando, se retoma desde el principio. */
+if(navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+  navigator.mediaDevices.addEventListener('devicechange', ()=>{
+    if(!ctx || R.calib) return;
+    clearTimeout(R.devTO);
+    R.devTO = setTimeout(async ()=>{
+      const was = R.playing, hadMic = !!R.mic;
+      if(was) stop();
+      micOff(); keepAlive(false);
+      try{ await ctx.close(); }catch(e){}
+      ctx = null;
+      if(hadMic){ await micOn(); renderMic(); renderPrecSetup(); }
+      if(was) start();
+    }, 600);
+  });
+}
 function click(t, kind, vol=1){
   const f = kind==='acc' ? 1760 : kind==='beat' ? 1180 : 820;
   const peak = (kind==='acc' ? .9 : kind==='beat' ? .6 : .22) * vol;
